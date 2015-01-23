@@ -1,0 +1,2533 @@
+6: 2 3
+#Create a simulator object
+set NS [new Simulator]
+#Define different colors for data flows (for NAM)
+$NS color 1 Blue
+$NS color 2 Red
+#Open the NAM trace file
+set NF [open out.Nam w]
+$NS mantras-all $NF
+#Define a 'finish' procedure
+PRC finish {} {
+     global NS NF
+     $NS flush-trace
+     #Close the NAM trace file
+     close $NF
+     #Execute NAM on the trace file
+     exec Nam out.Nam &
+     exit 0
+}
+#Create four nodes
+                                               
+set n1 [$NS node]
+set n2 [$NS node]
+set n3 [$NS node]
+set n4 [$NS node]
+set n5 [$NS node]
+set n6 [$NS node]
+set n7 [$NS node]
+
+#Create links between the nodes
+$NS duplex-link $n1 $n2 1GB 10ms Drop Tail
+$NS duplex-link $n1 $n3 1GB 10ms Drop Tail
+$NS duplex-link $n2 $n6 1Mb 20ms Drop Tail
+$NS duplex-link $n2 $n7 1Mb 20ms Drop Tail
+$NS duplex-link $n3 $n5 1Mb 20ms Drop Tail
+$NS duplex-link $n3 $n4 1Mb 20ms Drop Tail
+
+#Set Queue Size of link (n2-n3) to 10
+$NS queue-limit $n1 $n3 10
+$NS queue-limit $n3 $n5 10
+
+#Give node position (for NAM)
+$NS duplex-link-op $n1 $n2 orient left-down
+$NS duplex-link-op $n1 $n3 orient right-down
+$NS duplex-link-op $n3 $n4 orient left-down
+$NS duplex-link-op $n3 $n5 orient right-down
+$NS duplex-link-op $n2 $n6 orient left-down
+$NS duplex-link-op $n2 $n7 orient right-down
+
+#Monitor the queue for link (n2-n3). (for NAM)
+$NS duplex-link-op $n1 $n3 queues 0.5
+#$NS duplex-link-op $n3 $n5 queues 0.5
+
+
+#Setup a TC connection
+set Tc [new Agent/TC]
+$Tc set class_ 2
+$ns attach-agent $n6 $tcp
+set sink [new Agent/TCPSink]
+$ns attach-agent $n5 $sink
+$ns connect $tcp $sink
+$tcp set fid_ 1
+
+#Setup a FTP over TCP connection
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+$ftp set type_ FTP
+
+#Setup a UDP connection
+set udp [new Agent/UDP]
+$ns attach-agent $n4 $udp
+set null [new Agent/Null]
+$ns attach-agent $n5 $null
+$ns connect $udp $null
+$udp set fid_ 2
+
+#Setup a CBR over UDP connection
+
+set cbr [new Application/Traffic/CBR]
+$cbr attach-agent $udp
+$cbr set type_ CBR
+$cbr set packet_size_ 1000
+$cbr set rate_ 1mb
+$cbr set random_ false
+
+#Schedule events for the CBR and FTP agents
+$ns at 0.1 "$cbr start"
+$ns at 1.0 "$ftp start"
+$ns at 4.0 "$ftp stop"
+$ns at 4.5 "$cbr stop"
+
+#Detach tcp and sink agents (not really necessary)
+$ns at 4.5 "$ns detach-agent $n6 $tcp ; $ns detach-agent $n5 $sink"
+
+#Call the finish procedure after 5 seconds of simulation time
+$ns at 5.0 "finish"
+
+#Print CBR packet size and interval
+puts "CBR packet size = [$cbr set packet_size_]"
+puts "CBR interval = [$cbr set interval_]"
+
+#Run the simulation
+$ns run
+
+
+
+
+12
+12.5
+13
+13.5
+14
+14.5
+15
+localhost.localdomain
+2c2
+< set NS [new Simulator]
+---
+> set ns [new Simulator]
+4,5c4,5
+< $NS color 1 Blue
+< $NS color 2 Red
+---
+> $ns color 1 Blue
+> $ns color 2 Red
+7,8c7,8
+< set NF [open out.Nam w]
+< $NS mantras-all $NF
+---
+> set nf [open out.nam w]
+> $ns namtrace-all $nf
+10,12c10,12
+< PRC finish {} {
+<      global NS NF
+<      $NS flush-trace
+---
+> proc finish {} {
+>      global ns nf
+>      $ns flush-trace
+14c14
+<      close $NF
+---
+>      close $nf
+16c16
+<      exec Nam out.Nam &
+---
+>      exec nam out.nam &
+21,27c21,25
+< set n1 [$NS node]
+< set n2 [$NS node]
+< set n3 [$NS node]
+< set n4 [$NS node]
+< set n5 [$NS node]
+< set n6 [$NS node]
+< set n7 [$NS node]
+---
+> set n1 [$ns node]
+> set n2 [$ns node]
+> set n3 [$ns node]
+> set n4 [$ns node]
+> set n5 [$ns node]
+30,35c28,31
+< $NS duplex-link $n1 $n2 1GB 10ms Drop Tail
+< $NS duplex-link $n1 $n3 1GB 10ms Drop Tail
+< $NS duplex-link $n2 $n6 1Mb 20ms Drop Tail
+< $NS duplex-link $n2 $n7 1Mb 20ms Drop Tail
+< $NS duplex-link $n3 $n5 1Mb 20ms Drop Tail
+< $NS duplex-link $n3 $n4 1Mb 20ms Drop Tail
+---
+> $ns duplex-link $n1 $n2 2Mb 10ms DropTail
+> $ns duplex-link $n4 $n3 2Mb 10ms DropTail
+> $ns duplex-link $n3 $n5 1.7Mb 20ms DropTail
+> $ns duplex-link $n1 $n3 1.7Mb 20ms DropTail
+38,39c34,35
+< $NS queue-limit $n1 $n3 10
+< $NS queue-limit $n3 $n5 10
+---
+> $ns queue-limit $n1 $n3 10
+> $ns queue-limit $n3 $n5 10
+42,47c38,41
+< $NS duplex-link-op $n1 $n2 orient left-down
+< $NS duplex-link-op $n1 $n3 orient right-down
+< $NS duplex-link-op $n3 $n4 orient left-down
+< $NS duplex-link-op $n3 $n5 orient right-down
+< $NS duplex-link-op $n2 $n6 orient left-down
+< $NS duplex-link-op $n2 $n7 orient right-down
+---
+> $ns duplex-link-op $n1 $n2 orient left-down
+> $ns duplex-link-op $n1 $n3 orient right-down
+> $ns duplex-link-op $n3 $n4 orient left-down
+> $ns duplex-link-op $n3 $n5 orient right-down
+50,51c44,45
+< $NS duplex-link-op $n1 $n3 queues 0.5
+< #$NS duplex-link-op $n3 $n5 queues 0.5
+---
+> #$ns duplex-link-op $n1 $n3 queuePos 0.5
+> $ns duplex-link-op $n3 $n5 queuePos 0.5
+53,57c47,50
+< 
+< #Setup a TC connection
+< set Tc [new Agent/TC]
+< $Tc set class_ 2
+< $ns attach-agent $n6 $tcp
+---
+> #Setup a TCP connection
+> set tcp [new Agent/TCP]
+> $tcp set class_ 2
+> $ns attach-agent $n2 $tcp
+92c85
+< $ns at 4.5 "$ns detach-agent $n6 $tcp ; $ns detach-agent $n5 $sink"
+---
+> $ns at 4.5 "$ns detach-agent $n2 $tcp ; $ns detach-agent $n5 $sink"
+105,106d97
+< 
+< 
+'t' (0164) unimplemented
+'$' (044) unimplemented
+new Simulator'e' (0145) unimplemented
+'$' (044) unimplemented
+11'R' (0122) unimplemented
+'e' (0145) unimplemented
+'t' (0164) unimplemented
+2'$' (044) unimplemented
+open out.nam w'm' (0155) unimplemented
+'t' (0164) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'{' (0173) unimplemented
+'}' (0175) unimplemented
+'{' (0173) unimplemented
+'g' (0147) unimplemented
+'b' (0142) unimplemented
+1'$' (044) unimplemented
+'t' (0164) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'e' (0145) unimplemented
+'e' (0145) unimplemented
+'m' (0155) unimplemented
+'u' (0165) unimplemented
+'t' (0164) unimplemented
+0'm' (0155) unimplemented
+'&' (046) unimplemented
+'e' (0145) unimplemented
+'t' (0164) unimplemented
+'}' (0175) unimplemented
+'t' (0164) unimplemented
+'t' (0164) unimplemented
+1't' (0164) unimplemented
+2't' (0164) unimplemented
+3't' (0164) unimplemented
+4'$' (044) unimplemented
+$ns node'u' (0165) unimplemented
+'$' (044) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'$' (044) unimplemented
+1'M' (0115) unimplemented
+'b' (0142) unimplemented
+'m' (0155) unimplemented
+1101
+'T' (0124) unimplemented
+'$' (044) unimplemented
+10'u' (0165) unimplemented
+'$' (044) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'$' (044) unimplemented
+100'M' (0115) unimplemented
+'b' (0142) unimplemented
+'m' (0155) unimplemented
+1101
+'T' (0124) unimplemented
+'$' (044) unimplemented
+11'u' (0165) unimplemented
+'$' (044) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'$' (044) unimplemented
+11'M' (0115) unimplemented
+'b' (0142) unimplemented
+'m' (0155) unimplemented
+1101
+'T' (0124) unimplemented
+'$' (044) unimplemented
+101'u' (0165) unimplemented
+'$' (044) unimplemented
+'e' (0145) unimplemented
+'$' (044) unimplemented
+'$' (044) unimplemented
+1'M' (0115) unimplemented
+'b' (0142) unimplemented
+'m' (0155) unimplemented
+1101
+'T' (0124) unimplemented
+'$' (044) unimplemented
+11112	./.nautilus/metafiles
+156	./.nautilus
+166324	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra
+191484	./Desktop/vedios/data analytics/03-MapReduce
+201092	./Desktop/vedios/data analytics/01-Introduction
+222656	./Desktop/vedios/data analytics/04-NoSQL
+618096	./Desktop/vedios/data analytics/R for data analytics
+1399656	./Desktop/vedios/data analytics
+2086916	./Desktop/vedios
+2087052	./Desktop
+8	./.gconf/apps/nautilus
+8	./.gconf/apps/gnome-settings/gedit
+8	./.gconf/apps/gnome-settings/gnome-panel
+20	./.gconf/apps/gnome-settings
+8	./.gconf/apps/gedit-2/preferences/editor/line_numbers
+8	./.gconf/apps/gedit-2/preferences/editor/auto_indent
+20	./.gconf/apps/gedit-2/preferences/editor
+8	./.gconf/apps/gedit-2/preferences/ui/statusbar
+8	./.gconf/apps/gedit-2/preferences/ui/open_save
+20	./.gconf/apps/gedit-2/preferences/ui
+44	./.gconf/apps/gedit-2/preferences
+48	./.gconf/apps/gedit-2
+8	./.gconf/apps/puplet
+8	./.gconf/apps/panel/applets/workspace_switcher/prefs
+12	./.gconf/apps/panel/applets/workspace_switcher
+8	./.gconf/apps/panel/applets/window_list/prefs
+12	./.gconf/apps/panel/applets/window_list
+8	./.gconf/apps/panel/applets/clock/prefs
+12	./.gconf/apps/panel/applets/clock
+40	./.gconf/apps/panel/applets
+44	./.gconf/apps/panel
+8	./.gconf/apps/gnome-session/options
+12	./.gconf/apps/gnome-session
+144	./.gconf/apps
+8	./.gconf/desktop/gnome/accessibility/keyboard
+12	./.gconf/desktop/gnome/accessibility
+8	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com/0
+12	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com
+16	./.gconf/desktop/gnome/peripherals/keyboard
+20	./.gconf/desktop/gnome/peripherals
+36	./.gconf/desktop/gnome
+40	./.gconf/desktop
+192	./.gconf
+4	./.eggcups
+300	./.thumbnails/normal
+28	./.thumbnails/fail/gnome-thumbnail-factory
+32	./.thumbnails/fail
+336	./.thumbnails
+52	./.metacity/sessions
+56	./.metacity
+4	./os/os_lab
+8	./os
+8	./.config/gtk-2.0
+12	./.config
+196	./.gstreamer-0.10
+4	./.gnome2/nautilus-scripts
+16	./.gnome2/accels
+8	./.gnome2/share/fonts
+8	./.gnome2/share/cursor-fonts
+20	./.gnome2/share
+8	./.gnome2/evince
+604	./.gnome2/yelp.d
+4	./.gnome2/keyrings
+676	./.gnome2
+4	./.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+8	./.mozilla/extensions
+27604	./.mozilla/firefox/uixu9n76.default/Cache
+12	./.mozilla/firefox/uixu9n76.default/chrome
+16	./.mozilla/firefox/uixu9n76.default/bookmarkbackups
+4	./.mozilla/firefox/uixu9n76.default/extensions
+74324	./.mozilla/firefox/uixu9n76.default
+74332	./.mozilla/firefox
+74344	./.mozilla
+8	./.gnome/gnome-vfs
+12	./.gnome
+20	./.local/share/applications
+24	./.local/share
+28	./.local
+76	./.gconfd
+12	./.Trash
+8	./.nedit
+16	./temp
+4	./.redhat/esc
+8	./.redhat
+4	./.gnome2_private
+2164092	.
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/sda7            217982988   8140588 198590880   4% /
+/dev/sda5               988088     24004    913080   3% /boot
+tmpfs                  1973748         0   1973748   0% /dev/shm
+4	./.nautilus/savedNDyPcd
+4	./.nautilus/metafiles/file:%2F%2F%2F.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia%2Fdisk%2Fdats.xml
+4	./.nautilus/metafiles/x-nautilus-desktop:%2F%2F%2F.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fboot.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia%2FH%2540RDIK.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia%2Fdisk%2Fdata.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fusr.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FSoftwares%2FSimulator.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FSoftwares.xml
+4	./.nautilus/metafiles/network:%2F%2F%2F.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FSoftwares%2FSimulator%2FNS2.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FStaff%2FKavita%2FCN.xml
+4	./.nautilus/metafiles/computer:%2F%2F%2F.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia%2Fdisk.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Froot%2F.Trash.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Froot%2FDesktop.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Froot.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fhome.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FStaff%2FKavita%2FCN%2FLAB.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fmedia%2FMEET.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FStaff%2FKavita.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fhome%2Fstudent.xml
+4	./.nautilus/metafiles/smb:%2F%2F192.168.25.15%2FStaff.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fhome%2Fstudent%2Fdesktop.xml
+4	./.nautilus/metafiles/file:%2F%2F%2Fusr%2Flocal.xml
+112	./.nautilus/metafiles
+4	./.nautilus/saved1lWFh5
+4	./.nautilus/savedhj5NNF
+4	./.nautilus/savedbiA468
+4	./.nautilus/savedRyKazg
+4	./.nautilus/savedI3WaFy
+4	./.nautilus/saveddBOMi4
+4	./.nautilus/savedOtdqbW
+4	./.nautilus/savedPI1xqG
+4	./.nautilus/saved0Pwhod
+156	./.nautilus
+4	./lab2.tcl~
+4	./udpserver.c~
+8	./serv
+4	./Desktop/networksim.tcl~
+4	./Desktop/udpserver.c~
+4	./Desktop/udpserverinitial.c
+12	./Desktop/serv1
+4	./Desktop/udpserver.c
+20	./Desktop/Routing_Help.pdf
+12	./Desktop/udpc
+4	./Desktop/udpclient.c~
+12	./Desktop/udps
+0	./Desktop/out.nam
+16260	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011a_relational_algebra_details_union_diff_select [5f4e2746] .mp4
+18692	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011e_interpreting_complicated_sql [291f5c9c] .mp4
+15668	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011_declarative_languages [17ff0610] .mp4
+14384	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_013_logical_data_independence [bc0e50ff] .mp4
+16480	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011b_relational_algebra_details_project_cross_join [a8d9c7d3] .mp4
+16172	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_010_relational_algebra_intro [383ac70a] .mp4
+11444	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011f_user_defined_functions_in_databases [7c6568bd] .mp4
+15272	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_008_data_model_to_database [ef01b539] .mp4
+12512	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_011c_relational_algebra_details_theta_join [7ce3d66e] .mp4
+16448	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_012_physical_optimization [9af6bf17] .mp4
+12988	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra/recoded_videos_009_motivating_relational [2e2aa248] .mp4
+166324	./Desktop/vedios/data analytics/02-Relational Databases Relational Algebra
+12592	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_018_map_reduce_pseudocode [67da650d] .mp4
+19212	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_020_map_reduce_join_social_examples [dc791b1a] .mp4
+20676	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_025_experimental_mapreduce_vs_databases [bfe76312] .mp4
+13536	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_021_map_reduce_matrix_multiply [abec4802] .mp4
+23852	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_015_scalability [c4e4b0ab] .mp4
+23260	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_023_parallel_databases [b860638b] .mp4
+16576	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_019_map_reduce_text_examples [a98816db] .mp4
+18488	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_022_mapreduce_implementation_overview [df4bcbbe] .mp4
+9188	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_024_mapreduce_vs_databases [a1b0c79e] .mp4
+17288	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_017_map_reduce_abstractions [04c6e1ae] .mp4
+16812	./Desktop/vedios/data analytics/03-MapReduce/recoded_videos_016_parallel_processing [feeaaa02] .mp4
+191484	./Desktop/vedios/data analytics/03-MapReduce
+22408	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-006_big_data [b6229714] .mp4
+13752	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-001_context [774a8a05] .mp4
+14448	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-004_this_course_2 [db6b44f3] .mp4
+25936	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-assignment_1_getting_started_p0_p1 [913cf683] .mp4
+17180	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-005_escience [272c140b] .mp4
+20744	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-000_appetite_whetting_2 [7655c224] .mp4
+13096	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-002_dimensions [b6c1bced] .mp4
+24500	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-000_appetite_whetting_1 [d12b293a] .mp4
+20176	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-003_this_course_1 [49e94278] .mp4
+11176	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-007_logistics [bfeac2a3] .mp4
+17672	./Desktop/vedios/data analytics/01-Introduction/recoded_videos-006a_nick_bmi [52e1d142] .mp4
+201092	./Desktop/vedios/data analytics/01-Introduction
+23000	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_036_pig_cogroup_join [8a229b9f] .mp4
+24336	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_032_other_google_systems [84a74ab3] .mp4
+26612	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_027_eventual_consistency_cap [4b743d6c] .mp4
+19864	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_033_nosql_response [4d53916c] .mp4
+23900	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_028_nosql_characteristics_consistent_hashing [f43ea646] .mp4
+14748	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_037_pig_evaluation [cb3c6af2] .mp4
+14396	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_030_couchdb [a55e78d8] .mp4
+13120	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_026_nosql_intro [ceda0896] .mp4
+14136	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_029_dynamo [a6b96330] .mp4
+16896	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_035_pig_load_filter_group_foreach [55554b11] .mp4
+15880	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_031_bigtable [6594b6a4] .mp4
+15764	./Desktop/vedios/data analytics/04-NoSQL/recoded_videos_034_pig_intro [1c5e4af8] .mp4
+222656	./Desktop/vedios/data analytics/04-NoSQL
+14064	./Desktop/vedios/data analytics/R for data analytics/2 - 6 - Subsetting (17-20).mp4
+12540	./Desktop/vedios/data analytics/R for data analytics/3 - 1 - Control Structures (15-23).mp4
+8764	./Desktop/vedios/data analytics/R for data analytics/2 - 2 - What Makes R Different- (4-20).mp4
+6496	./Desktop/vedios/data analytics/R for data analytics/4 - 5 - Plotting with Lattice Graphics (7-18).mp4
+8440	./Desktop/vedios/data analytics/R for data analytics/5 - 4 - Introduction to Baltimore City Homicide Data (4-20).mp4
+31656	./Desktop/vedios/data analytics/R for data analytics/5 - 6 - Classes and Methods in R (34-51).mp4
+3120	./Desktop/vedios/data analytics/R for data analytics/2 - 7 - Vectorized Operations (3-46).mp4
+6444	./Desktop/vedios/data analytics/R for data analytics/2 - 12 - The str function (6-05).mp4
+5384	./Desktop/vedios/data analytics/R for data analytics/4 - 9 - Plotting with Mathematical Annotation (6-03).mp4
+6548	./Desktop/vedios/data analytics/R for data analytics/3 - 6 - apply (7-16).mp4
+12272	./Desktop/vedios/data analytics/R for data analytics/2 - 3 - How to Get Help (13-53).mp4
+20884	./Desktop/vedios/data analytics/R for data analytics/4 - 10 - Reproducible Research- Concepts and Ideas (16-05).mp4
+8304	./Desktop/vedios/data analytics/R for data analytics/2 - 11 - Setting Your Working Directory and Editing R Code (Mac) [7-42].mp4
+64656	./Desktop/vedios/data analytics/R for data analytics/4 - 7 - Plotting with ggplot2- Part 1 (24-18).mp4
+2556	./Desktop/vedios/data analytics/R for data analytics/1 - 3 - Installing R on Windows (1-27).mp4
+6060	./Desktop/vedios/data analytics/R for data analytics/4 - 1 - Week 3 Introduction (1-58).mp4
+9528	./Desktop/vedios/data analytics/R for data analytics/3 - 11 - Debugging Tools- Part 3 (8-23).mp4
+12248	./Desktop/vedios/data analytics/R for data analytics/2 - 8 - Reading-Writing Data- Part 1 (12-55).mp4
+23140	./Desktop/vedios/data analytics/R for data analytics/4 - 6 - Lattice Graphics Plotting Demo (21-23).mp4
+12436	./Desktop/vedios/data analytics/R for data analytics/3 - 10 - Debugging Tools- Part 2 (10-07).mp4
+10156	./Desktop/vedios/data analytics/R for data analytics/3 - 9 - Debugging Tools- Part 1 (8-50).mp4
+14412	./Desktop/vedios/data analytics/R for data analytics/3 - 2 - Functions (16.32).mp4
+34052	./Desktop/vedios/data analytics/R for data analytics/2 - 5 - Data Types (31-06).mp4
+6336	./Desktop/vedios/data analytics/R for data analytics/2 - 10 - Setting Your Working Directory and Editing R Code (Windows) [7-20].mp4
+14072	./Desktop/vedios/data analytics/R for data analytics/2 - 4 - Background and Overview (16-38).mp4
+17812	./Desktop/vedios/data analytics/R for data analytics/4 - 4 - Base Graphics Plotting Demo (16-56).mp4
+8432	./Desktop/vedios/data analytics/R for data analytics/2 - 9 - Reading-Writing Data- Part 2 (9-25).mp4
+31360	./Desktop/vedios/data analytics/R for data analytics/4 - 11 - Literate Statistical Programming with knitr (25-33).mp4
+23752	./Desktop/vedios/data analytics/R for data analytics/5 - 3 - Regular Expressions (27-21).mp4
+18396	./Desktop/vedios/data analytics/R for data analytics/5 - 1 - Plotting and Color in R (22-06).mp4
+7740	./Desktop/vedios/data analytics/R for data analytics/3 - 5 - lapply (9-23).mp4
+30356	./Desktop/vedios/data analytics/R for data analytics/4 - 8 - Plotting with ggplot2- Part 2 (28-35).mp4
+37864	./Desktop/vedios/data analytics/R for data analytics/5 - 5 - Regular Expressions in R (30-08).mp4
+3332	./Desktop/vedios/data analytics/R for data analytics/2 - 1 - Welcome (1-51).mp4
+10532	./Desktop/vedios/data analytics/R for data analytics/3 - 7 - tapply and split (12-22).mp4
+13320	./Desktop/vedios/data analytics/R for data analytics/4 - 2 - Simulation (14-51).mp4
+17956	./Desktop/vedios/data analytics/R for data analytics/3 - 3 - Scoping Rules (19-03).mp4
+3804	./Desktop/vedios/data analytics/R for data analytics/3 - 8 - mapply (4-41).mp4
+8404	./Desktop/vedios/data analytics/R for data analytics/3 - 4 - Optimization Application (9-21).mp4
+8564	./Desktop/vedios/data analytics/R for data analytics/5 - 2 - Dates and Times (10-29).mp4
+21900	./Desktop/vedios/data analytics/R for data analytics/4 - 3 - Plotting with Base Graphics (23-22).mp4
+618096	./Desktop/vedios/data analytics/R for data analytics
+1399656	./Desktop/vedios/data analytics
+384648	./Desktop/vedios/Big Data and Hadoop 1   Hadoop Tutorial 1  Big Data Tutorial 1  Hadoop Tutorial for Beginners -1.mp4
+197532	./Desktop/vedios/Hadoop Single Node Cluster Setup On Ubuntu - YouTube.mp4
+19600	./Desktop/vedios/2 - 4 - Combiners and Partition Functions (Advanced).mp4
+36552	./Desktop/vedios/2 - 2 - The MapReduce Computational Model.mp4
+28260	./Desktop/vedios/2 - 1 - Distributed File Systems.mp4
+20664	./Desktop/vedios/2 - 3 - Scheduling and Data Flow.mp4
+2086916	./Desktop/vedios
+12	./Desktop/cli1
+4	./Desktop/lab2_1.tcl
+4	./Desktop/udpclient.c
+32	./Desktop/Linux-lab1.doc
+4	./Desktop/networksim.tcl
+2087052	./Desktop
+12	./a.out
+8	./.bash_logout
+4	./lab2_1.tcl~
+12	./anaconda-ks.cfg
+4	./.esd_auth
+8	./.bash_history
+4	./.gconf/apps/nautilus/%gconf.xml
+8	./.gconf/apps/nautilus
+4	./.gconf/apps/gnome-settings/gedit/%gconf.xml
+8	./.gconf/apps/gnome-settings/gedit
+4	./.gconf/apps/gnome-settings/gnome-panel/%gconf.xml
+8	./.gconf/apps/gnome-settings/gnome-panel
+0	./.gconf/apps/gnome-settings/%gconf.xml
+20	./.gconf/apps/gnome-settings
+4	./.gconf/apps/gedit-2/preferences/editor/line_numbers/%gconf.xml
+8	./.gconf/apps/gedit-2/preferences/editor/line_numbers
+0	./.gconf/apps/gedit-2/preferences/editor/%gconf.xml
+4	./.gconf/apps/gedit-2/preferences/editor/auto_indent/%gconf.xml
+8	./.gconf/apps/gedit-2/preferences/editor/auto_indent
+20	./.gconf/apps/gedit-2/preferences/editor
+4	./.gconf/apps/gedit-2/preferences/ui/statusbar/%gconf.xml
+8	./.gconf/apps/gedit-2/preferences/ui/statusbar
+4	./.gconf/apps/gedit-2/preferences/ui/open_save/%gconf.xml
+8	./.gconf/apps/gedit-2/preferences/ui/open_save
+0	./.gconf/apps/gedit-2/preferences/ui/%gconf.xml
+20	./.gconf/apps/gedit-2/preferences/ui
+0	./.gconf/apps/gedit-2/preferences/%gconf.xml
+44	./.gconf/apps/gedit-2/preferences
+0	./.gconf/apps/gedit-2/%gconf.xml
+48	./.gconf/apps/gedit-2
+4	./.gconf/apps/puplet/%gconf.xml
+8	./.gconf/apps/puplet
+0	./.gconf/apps/panel/applets/workspace_switcher/%gconf.xml
+4	./.gconf/apps/panel/applets/workspace_switcher/prefs/%gconf.xml
+8	./.gconf/apps/panel/applets/workspace_switcher/prefs
+12	./.gconf/apps/panel/applets/workspace_switcher
+0	./.gconf/apps/panel/applets/window_list/%gconf.xml
+4	./.gconf/apps/panel/applets/window_list/prefs/%gconf.xml
+8	./.gconf/apps/panel/applets/window_list/prefs
+12	./.gconf/apps/panel/applets/window_list
+0	./.gconf/apps/panel/applets/%gconf.xml
+0	./.gconf/apps/panel/applets/clock/%gconf.xml
+4	./.gconf/apps/panel/applets/clock/prefs/%gconf.xml
+8	./.gconf/apps/panel/applets/clock/prefs
+12	./.gconf/apps/panel/applets/clock
+40	./.gconf/apps/panel/applets
+0	./.gconf/apps/panel/%gconf.xml
+44	./.gconf/apps/panel
+0	./.gconf/apps/%gconf.xml
+0	./.gconf/apps/gnome-session/%gconf.xml
+4	./.gconf/apps/gnome-session/options/%gconf.xml
+8	./.gconf/apps/gnome-session/options
+12	./.gconf/apps/gnome-session
+144	./.gconf/apps
+4	./.gconf/desktop/gnome/accessibility/keyboard/%gconf.xml
+8	./.gconf/desktop/gnome/accessibility/keyboard
+0	./.gconf/desktop/gnome/accessibility/%gconf.xml
+12	./.gconf/desktop/gnome/accessibility
+0	./.gconf/desktop/gnome/%gconf.xml
+4	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com/0/%gconf.xml
+8	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com/0
+0	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com/%gconf.xml
+12	./.gconf/desktop/gnome/peripherals/keyboard/host-aca80746.ipt.aol.com
+0	./.gconf/desktop/gnome/peripherals/keyboard/%gconf.xml
+16	./.gconf/desktop/gnome/peripherals/keyboard
+0	./.gconf/desktop/gnome/peripherals/%gconf.xml
+20	./.gconf/desktop/gnome/peripherals
+36	./.gconf/desktop/gnome
+0	./.gconf/desktop/%gconf.xml
+40	./.gconf/desktop
+192	./.gconf
+4	./.eggcups
+4	./file2.txt
+4	./lab2.tcl
+12	./.thumbnails/normal/83a4969497062ae8d1d4445ebbd49aec.png
+4	./.thumbnails/normal/9e5dd290fd9a3ebb975facecef65f91a.png
+4	./.thumbnails/normal/e9d70095e9415ad9b164007be57ac8e7.png
+4	./.thumbnails/normal/6cf2a8cdbbc073f9cb29387093db88cd.png
+8	./.thumbnails/normal/1a8aebd3cc0d0d0f378815db2b1cb003.png
+8	./.thumbnails/normal/1a05113e4abd6e1bbf6a7e52d0cb4928.png
+12	./.thumbnails/normal/57424a5a04b739e0058e3be238e6b02b.png
+8	./.thumbnails/normal/71a5816ed9b95a83f30ba1db751258d7.png
+4	./.thumbnails/normal/48b4a66d1552b9b5e3efb1c18085f7d8.png
+8	./.thumbnails/normal/b11f0fc14a143cf4b8d963606c1033ca.png
+8	./.thumbnails/normal/c3f0dc3c5eaa29db82edb7b9175568df.png
+8	./.thumbnails/normal/e81aa3504731eda92542a6337a32a564.png
+8	./.thumbnails/normal/401e85eac6c12b576f1f1cf1f19ecb4a.png
+8	./.thumbnails/normal/a82c760d6d772d918074aebc8465a3d3.png
+24	./.thumbnails/normal/cd8611ba5ef47d63c5d65f2b74e0ce3a.png
+12	./.thumbnails/normal/1218b5cb53cac745b8d5cc41b7e988c5.png
+4	./.thumbnails/normal/64d2ab79f2ac7ee369cc4756fb2b4634.png
+12	./.thumbnails/normal/cdf529c145a8d513c8509de32ce87929.png
+4	./.thumbnails/normal/33331e6e36c60ed8475adfacee570f94.png
+8	./.thumbnails/normal/31ff4a859c21cbdaa33be7a710f304e9.png
+4	./.thumbnails/normal/9b6b781023c9f892bb548025582abf70.png
+12	./.thumbnails/normal/27073801c0e4e13cb4c98e853ba99b0c.png
+4	./.thumbnails/normal/0312667a4154dab0d3550167152f77a8.png
+8	./.thumbnails/normal/17b73102f1dc2becaad55fff94541510.png
+16	./.thumbnails/normal/13d87e6e74eca940e16e7d5740b7c8cc.png
+8	./.thumbnails/normal/8ce4aa1babb848d8b8ea5ca44fd0800d.png
+8	./.thumbnails/normal/557cee5b463a0a801a10fde7c7b9864f.png
+8	./.thumbnails/normal/fe43b7ead543fa95e89ebf97ead38a71.png
+8	./.thumbnails/normal/a3009cf814585d0229151fcba6daaac4.png
+12	./.thumbnails/normal/d1f1fb5d97c7930a4a84d1c60ca761fc.png
+4	./.thumbnails/normal/bf59856f5ad6fe27903ca64d05d3d9ff.png
+4	./.thumbnails/normal/f898ac9a1b050de4feee0c184e3a4ad2.png
+8	./.thumbnails/normal/4848ed454caa32d0553c6f52db730e68.png
+4	./.thumbnails/normal/7023f18853409e2faba51c0b97d50518.png
+12	./.thumbnails/normal/f46f7f7d0f98312580de3b59bdf9994e.png
+8	./.thumbnails/normal/219e0a481e1bef07a75972fa66db2e8d.png
+300	./.thumbnails/normal
+4	./.thumbnails/fail/gnome-thumbnail-factory/1b23e4762f3a2baf12abb4a0e56fe278.png
+4	./.thumbnails/fail/gnome-thumbnail-factory/fc805386731fb2a01543dd6a119fc420.png
+4	./.thumbnails/fail/gnome-thumbnail-factory/64d2ab79f2ac7ee369cc4756fb2b4634.png
+4	./.thumbnails/fail/gnome-thumbnail-factory/33331e6e36c60ed8475adfacee570f94.png
+4	./.thumbnails/fail/gnome-thumbnail-factory/b61d6e701f6ec02901046133ba696734.png
+4	./.thumbnails/fail/gnome-thumbnail-factory/b2c7a625b9d2581c5081fd6c41f493fe.png
+28	./.thumbnails/fail/gnome-thumbnail-factory
+32	./.thumbnails/fail
+336	./.thumbnails
+16	./install.log.syslog
+4	./.metacity/sessions/1409242355-3367-3142127268.ms
+4	./.metacity/sessions/1409156627-3429-2930053016.ms
+4	./.metacity/sessions/1411569663-3369-1783467837.ms
+4	./.metacity/sessions/1421421838-30784-502555575.ms
+4	./.metacity/sessions/1422022251-3512-827425832.ms
+4	./.metacity/sessions/1421417273-3366-1897500997.ms
+4	./.metacity/sessions/1410962502-3365-2742624035.ms
+4	./.metacity/sessions/1407591828-3367-316101927.ms
+4	./.metacity/sessions/1415359927-3360-3116329069.ms
+4	./.metacity/sessions/1412778192-3375-2171664718.ms
+4	./.metacity/sessions/1409251211-3442-2705518564.ms
+4	./.metacity/sessions/1415630033-3362-1231255449.ms
+52	./.metacity/sessions
+56	./.metacity
+4	./os/os_lab
+8	./os
+4	./.config/gtk-2.0/gtkfilechooser
+8	./.config/gtk-2.0
+12	./.config
+4	./lab2_1.tcl.bak
+192	./.gstreamer-0.10/registry.x86_64.bin
+196	./.gstreamer-0.10
+4	./.gnome2/gedit-2
+4	./.gnome2/nautilus-scripts
+4	./.gnome2/accels/gedit
+8	./.gnome2/accels/evince
+16	./.gnome2/accels
+4	./.gnome2/share/fonts/fonts.dir
+8	./.gnome2/share/fonts
+4	./.gnome2/share/cursor-fonts/fonts.dir
+8	./.gnome2/share/cursor-fonts
+20	./.gnome2/share
+4	./.gnome2/evince/ev-metadata.xml
+8	./.gnome2/evince
+4	./.gnome2/yelp
+524	./.gnome2/yelp.d/manindex.xml
+44	./.gnome2/yelp.d/sk-content-list.last
+32	./.gnome2/yelp.d/omfindex.xml
+604	./.gnome2/yelp.d
+4	./.gnome2/gedit-metadata.xml
+4	./.gnome2/keyrings
+676	./.gnome2
+4	./file1.txt
+4	./.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+8	./.mozilla/extensions
+4	./.mozilla/firefox/profiles.ini
+68	./.mozilla/firefox/uixu9n76.default/Cache/99D11837d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/05BC5B64d01
+64	./.mozilla/firefox/uixu9n76.default/Cache/9B2FAE6Fd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/3DBBC79Bd01
+48	./.mozilla/firefox/uixu9n76.default/Cache/7E166FEAd01
+180	./.mozilla/firefox/uixu9n76.default/Cache/D8E2078Cd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/CDD49F4Dd01
+60	./.mozilla/firefox/uixu9n76.default/Cache/B1B523ADd01
+72	./.mozilla/firefox/uixu9n76.default/Cache/7E3706D8d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/0589FA0Bd01
+124	./.mozilla/firefox/uixu9n76.default/Cache/C205F9F5d01
+48	./.mozilla/firefox/uixu9n76.default/Cache/3A1D96D7d01
+156	./.mozilla/firefox/uixu9n76.default/Cache/9D63E460d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/5BCD6979d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/ABADD656d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/25BA91DFd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/451CA6E2d01
+76	./.mozilla/firefox/uixu9n76.default/Cache/91C4C29Ad01
+56	./.mozilla/firefox/uixu9n76.default/Cache/0515D42Fd01
+184	./.mozilla/firefox/uixu9n76.default/Cache/635601FEd01
+56	./.mozilla/firefox/uixu9n76.default/Cache/B4F3AE0Dd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/094C8816d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/EDDD6E5Ed01
+188	./.mozilla/firefox/uixu9n76.default/Cache/29C05D4Fd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/86A8249Ad01
+24	./.mozilla/firefox/uixu9n76.default/Cache/52A3A468d01
+48	./.mozilla/firefox/uixu9n76.default/Cache/EDC54DDCd01
+44	./.mozilla/firefox/uixu9n76.default/Cache/919853BDd01
+188	./.mozilla/firefox/uixu9n76.default/Cache/088A93DAd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/F3D40031d01
+92	./.mozilla/firefox/uixu9n76.default/Cache/FBC5011Ad01
+28	./.mozilla/firefox/uixu9n76.default/Cache/EA5D3E9Ed01
+36	./.mozilla/firefox/uixu9n76.default/Cache/5AB1D728d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/2BD24075d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/7F88F9A3d01
+92	./.mozilla/firefox/uixu9n76.default/Cache/65217116d01
+60	./.mozilla/firefox/uixu9n76.default/Cache/0E1C597Dd01
+160	./.mozilla/firefox/uixu9n76.default/Cache/646DD2E8d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/EFA325E6d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/3112BB33d01
+3032	./.mozilla/firefox/uixu9n76.default/Cache/_CACHE_003_
+36	./.mozilla/firefox/uixu9n76.default/Cache/24228934d01
+100	./.mozilla/firefox/uixu9n76.default/Cache/2BF4D2E3d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/D08AE4D6d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/AC892A39d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/398A2D7Ed01
+56	./.mozilla/firefox/uixu9n76.default/Cache/AB1F0580d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/C5BAADD5d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/4E0C7F74d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/AACE53CFd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/9B9EB3E7d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/20655521d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/FCC02B77d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/2929C96Ad01
+56	./.mozilla/firefox/uixu9n76.default/Cache/2A1271E9d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/CE7ACCD3d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/FA67B979d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/FEBA539Bd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/C1517368d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/32014D6Bd01
+156	./.mozilla/firefox/uixu9n76.default/Cache/3F4B1F85d01
+48	./.mozilla/firefox/uixu9n76.default/Cache/CC9F2AC3d01
+144	./.mozilla/firefox/uixu9n76.default/Cache/DC1ED9B7d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/E2502C64d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/884F5B29d01
+96	./.mozilla/firefox/uixu9n76.default/Cache/3FBCCDF2d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/A2C2785Ad01
+40	./.mozilla/firefox/uixu9n76.default/Cache/A4B94A5Ad01
+32	./.mozilla/firefox/uixu9n76.default/Cache/A0E8577Fd01
+128	./.mozilla/firefox/uixu9n76.default/Cache/FC2DD431d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/5D7E0047d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/F72CB9A1d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/DDC9D31Bd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/D7A7F1DCd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/C09CC104d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/06622658d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/1C29EDB4d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/46C2E164d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/FEC4A865d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/72225BF1d01
+124	./.mozilla/firefox/uixu9n76.default/Cache/9B2FAE7Fd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/6BE31FA3d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/96833C5Ed01
+28	./.mozilla/firefox/uixu9n76.default/Cache/CB3FAB67d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/201B0625d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/D891887Ed01
+120	./.mozilla/firefox/uixu9n76.default/Cache/539A9AB5d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/58643E6Dd01
+184	./.mozilla/firefox/uixu9n76.default/Cache/AC65B557d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/8531C84Ed01
+36	./.mozilla/firefox/uixu9n76.default/Cache/BC245226d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/3BE3D222d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/4382E452d01
+80	./.mozilla/firefox/uixu9n76.default/Cache/2BBD0162d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/9EB2E163d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/C04A5F80d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/1A71E01Ed01
+20	./.mozilla/firefox/uixu9n76.default/Cache/D5324AE5d01
+92	./.mozilla/firefox/uixu9n76.default/Cache/4CADAE41d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/E24B1871d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/6ED4F9B0d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/9F7216D1d01
+72	./.mozilla/firefox/uixu9n76.default/Cache/B7BC0F98d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/B465F8C8d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/85DA90C2d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/A548B10Cd01
+72	./.mozilla/firefox/uixu9n76.default/Cache/51CE1F15d01
+172	./.mozilla/firefox/uixu9n76.default/Cache/3C080105d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/3E5308FEd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/20490E7Cd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/2DE9F58Ed01
+76	./.mozilla/firefox/uixu9n76.default/Cache/2DBB00D3d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/9ABB1ADFd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/AE346633d01
+72	./.mozilla/firefox/uixu9n76.default/Cache/AFD3097Ad01
+160	./.mozilla/firefox/uixu9n76.default/Cache/3ED9F032d01
+148	./.mozilla/firefox/uixu9n76.default/Cache/4C1B39B5d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/EBE8A9A1d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/CBC0DFDFd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/BAD13587d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/DBEC60C7d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/1811E01Ed01
+120	./.mozilla/firefox/uixu9n76.default/Cache/3877F922d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/782FEBA1d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/54DA6795d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/53ED0211d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/DB5085D1d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/18B12FECd01
+56	./.mozilla/firefox/uixu9n76.default/Cache/A8AE335Fd01
+160	./.mozilla/firefox/uixu9n76.default/Cache/FAE9EDB0d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/941CD2F8d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/307BE3EBd01
+80	./.mozilla/firefox/uixu9n76.default/Cache/2A5A4D36d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/835EA164d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/EC4C64EAd01
+116	./.mozilla/firefox/uixu9n76.default/Cache/5C60B929d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/341E1CA9d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/2AF8FAB0d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/A6BF4CCAd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/0E53FBF9d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/89BF7879d01
+136	./.mozilla/firefox/uixu9n76.default/Cache/07C41039d01
+64	./.mozilla/firefox/uixu9n76.default/Cache/9C03FB42d01
+68	./.mozilla/firefox/uixu9n76.default/Cache/B76864D7d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/38CC7C22d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/4B387D06d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/C17A26F0d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/6618C6C9d01
+112	./.mozilla/firefox/uixu9n76.default/Cache/6EDFA210d01
+104	./.mozilla/firefox/uixu9n76.default/Cache/36F6812Ad01
+184	./.mozilla/firefox/uixu9n76.default/Cache/702DFC1Cd01
+56	./.mozilla/firefox/uixu9n76.default/Cache/9465843Fd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/1801E01Ed01
+24	./.mozilla/firefox/uixu9n76.default/Cache/2D36A1F7d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/80E03D49d01
+72	./.mozilla/firefox/uixu9n76.default/Cache/27CDC3CDd01
+180	./.mozilla/firefox/uixu9n76.default/Cache/C00466F9d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/F4C4A865d01
+80	./.mozilla/firefox/uixu9n76.default/Cache/8CFB120Ed01
+184	./.mozilla/firefox/uixu9n76.default/Cache/ACAEB83Ad01
+124	./.mozilla/firefox/uixu9n76.default/Cache/23228212d01
+72	./.mozilla/firefox/uixu9n76.default/Cache/_CACHE_MAP_
+160	./.mozilla/firefox/uixu9n76.default/Cache/69A11EDDd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/896DF86Ed01
+20	./.mozilla/firefox/uixu9n76.default/Cache/474933D8d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/E3DBC0D6d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/6619D6C9d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/DA358483d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/70EB62E2d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/60707694d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/FD01D717d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/6A1E5DF6d01
+144	./.mozilla/firefox/uixu9n76.default/Cache/F9EB9E18d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/15D66E15d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/E9359721d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/FCD6C83Cd01
+156	./.mozilla/firefox/uixu9n76.default/Cache/5F6C88DFd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/301E0BD0d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/CC88BED2d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/11ED97F4d01
+1136	./.mozilla/firefox/uixu9n76.default/Cache/_CACHE_002_
+24	./.mozilla/firefox/uixu9n76.default/Cache/5780C51Ed01
+40	./.mozilla/firefox/uixu9n76.default/Cache/1BE1E01Ed01
+28	./.mozilla/firefox/uixu9n76.default/Cache/BE3FA632d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/919813BDd01
+36	./.mozilla/firefox/uixu9n76.default/Cache/2F7EE550d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/EBDDD6A6d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/05F03D9Ed01
+32	./.mozilla/firefox/uixu9n76.default/Cache/57915505d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/55601B18d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/E522B06Bd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/7B8D8675d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/4C3FFAECd01
+180	./.mozilla/firefox/uixu9n76.default/Cache/D4AB4F45d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/AB7E8CA1d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/C2553311d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/8B30B195d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/BBECCCF1d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/0064B516d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/F0C4A865d01
+144	./.mozilla/firefox/uixu9n76.default/Cache/8B2D909Ad01
+280	./.mozilla/firefox/uixu9n76.default/Cache/B5FD4FD5d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/45E23160d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/EC65C640d01
+1036	./.mozilla/firefox/uixu9n76.default/Cache/_CACHE_001_
+184	./.mozilla/firefox/uixu9n76.default/Cache/58FED043d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/2F75114Ed01
+184	./.mozilla/firefox/uixu9n76.default/Cache/3A3222A2d01
+48	./.mozilla/firefox/uixu9n76.default/Cache/69EA6BCDd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/C4775813d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/11C0C6ACd01
+40	./.mozilla/firefox/uixu9n76.default/Cache/E7B7396Dd01
+180	./.mozilla/firefox/uixu9n76.default/Cache/568DFEC4d01
+100	./.mozilla/firefox/uixu9n76.default/Cache/5ECB82C7d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/F7018A3Fd01
+140	./.mozilla/firefox/uixu9n76.default/Cache/AAE92ADCd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/B054C360d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/9CD620F0d01
+224	./.mozilla/firefox/uixu9n76.default/Cache/98882007d01
+156	./.mozilla/firefox/uixu9n76.default/Cache/6DA60F94d01
+116	./.mozilla/firefox/uixu9n76.default/Cache/061D39B6d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/9209DBC1d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/66389AC3d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/3BF84C9Fd01
+96	./.mozilla/firefox/uixu9n76.default/Cache/42F18D43d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/919843BDd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/D9E0FFBBd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/25A12303d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/79878702d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/C497AB28d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/269958A1d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/25A980A5d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/76C05F4Ed01
+20	./.mozilla/firefox/uixu9n76.default/Cache/E6C4A865d01
+44	./.mozilla/firefox/uixu9n76.default/Cache/5722B748d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/99DA82F4d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/D7C9B154d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/51EA41CDd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/0F585E45d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/BAED7F13d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/0A8A32FCd01
+84	./.mozilla/firefox/uixu9n76.default/Cache/418F46BDd01
+192	./.mozilla/firefox/uixu9n76.default/Cache/2FCC2A96d01
+64	./.mozilla/firefox/uixu9n76.default/Cache/C3FAAD25d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/CF2F3A14d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/044F1785d01
+180	./.mozilla/firefox/uixu9n76.default/Cache/6EEB599Ad01
+56	./.mozilla/firefox/uixu9n76.default/Cache/AB7DBCA1d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/C962A4EBd01
+72	./.mozilla/firefox/uixu9n76.default/Cache/CEFCC5E4d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/E62A26D5d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/916087C2d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/5810A96Ad01
+20	./.mozilla/firefox/uixu9n76.default/Cache/480B5D73d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/AA827344d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/0625D42Fd01
+80	./.mozilla/firefox/uixu9n76.default/Cache/780DE804d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/30EDC437d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/C7F0E539d01
+88	./.mozilla/firefox/uixu9n76.default/Cache/9B60637Ad01
+68	./.mozilla/firefox/uixu9n76.default/Cache/87B2A1B7d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/DE8C0F64d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/DAF59364d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/7B3054E7d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/02089FA4d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/D7BDD4ABd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/351DD3B3d01
+48	./.mozilla/firefox/uixu9n76.default/Cache/EF97C8F4d01
+40	./.mozilla/firefox/uixu9n76.default/Cache/2772BE05d01
+160	./.mozilla/firefox/uixu9n76.default/Cache/1F39DFC2d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/056E266Ed01
+60	./.mozilla/firefox/uixu9n76.default/Cache/B89188BDd01
+44	./.mozilla/firefox/uixu9n76.default/Cache/34C08631d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/F3E44655d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/C69F440Cd01
+40	./.mozilla/firefox/uixu9n76.default/Cache/919823BDd01
+184	./.mozilla/firefox/uixu9n76.default/Cache/D6417135d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/331E0BD4d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/36F0ED68d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/8E1E36B9d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/94F9DFD1d01
+132	./.mozilla/firefox/uixu9n76.default/Cache/C5A43E28d01
+64	./.mozilla/firefox/uixu9n76.default/Cache/9E6BB29Fd01
+28	./.mozilla/firefox/uixu9n76.default/Cache/ADA9991Cd01
+188	./.mozilla/firefox/uixu9n76.default/Cache/EC7C0464d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/A06ED72Bd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/58167250d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/37050705d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/4849131Cd01
+24	./.mozilla/firefox/uixu9n76.default/Cache/82B808B5d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/7FADA3F4d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/8457B223d01
+188	./.mozilla/firefox/uixu9n76.default/Cache/270554D9d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/0DDDCCF1d01
+84	./.mozilla/firefox/uixu9n76.default/Cache/2B4DC525d01
+56	./.mozilla/firefox/uixu9n76.default/Cache/291999DFd01
+32	./.mozilla/firefox/uixu9n76.default/Cache/7509A74Bd01
+20	./.mozilla/firefox/uixu9n76.default/Cache/AD92907Cd01
+56	./.mozilla/firefox/uixu9n76.default/Cache/90914775d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/7B614A51d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/D1227232d01
+32	./.mozilla/firefox/uixu9n76.default/Cache/A3C139A4d01
+20	./.mozilla/firefox/uixu9n76.default/Cache/48638E89d01
+164	./.mozilla/firefox/uixu9n76.default/Cache/9CC68457d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/9547C4E6d01
+24	./.mozilla/firefox/uixu9n76.default/Cache/E4C4A865d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/0BC56035d01
+28	./.mozilla/firefox/uixu9n76.default/Cache/3855020Ed01
+28	./.mozilla/firefox/uixu9n76.default/Cache/D38D0F34d01
+104	./.mozilla/firefox/uixu9n76.default/Cache/B52285EFd01
+156	./.mozilla/firefox/uixu9n76.default/Cache/B5A38029d01
+36	./.mozilla/firefox/uixu9n76.default/Cache/CCF31FC6d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/1295BAE5d01
+184	./.mozilla/firefox/uixu9n76.default/Cache/C1E3E82Ed01
+27604	./.mozilla/firefox/uixu9n76.default/Cache
+4	./.mozilla/firefox/uixu9n76.default/signons3.txt
+4	./.mozilla/firefox/uixu9n76.default/search.sqlite
+4	./.mozilla/firefox/uixu9n76.default/localstore.rdf
+8	./.mozilla/firefox/uixu9n76.default/content-prefs.sqlite
+4	./.mozilla/firefox/uixu9n76.default/compatibility.ini
+8	./.mozilla/firefox/uixu9n76.default/prefs.js
+4	./.mozilla/firefox/uixu9n76.default/formhistory.sqlite
+4	./.mozilla/firefox/uixu9n76.default/chrome/userContent-example.css
+4	./.mozilla/firefox/uixu9n76.default/chrome/userChrome-example.css
+12	./.mozilla/firefox/uixu9n76.default/chrome
+4	./.mozilla/firefox/uixu9n76.default/mimeTypes.rdf
+16	./.mozilla/firefox/uixu9n76.default/key3.db
+4	./.mozilla/firefox/uixu9n76.default/urlclassifierkey3.txt
+42468	./.mozilla/firefox/uixu9n76.default/urlclassifier3.sqlite
+24	./.mozilla/firefox/uixu9n76.default/cookies.sqlite
+8	./.mozilla/firefox/uixu9n76.default/extensions.ini
+380	./.mozilla/firefox/uixu9n76.default/places.sqlite
+4	./.mozilla/firefox/uixu9n76.default/bookmarkbackups/bookmarks-2015-01-16.json
+4	./.mozilla/firefox/uixu9n76.default/bookmarkbackups/bookmarks-2014-09-17.json
+4	./.mozilla/firefox/uixu9n76.default/bookmarkbackups/bookmarks-2014-08-27.json
+16	./.mozilla/firefox/uixu9n76.default/bookmarkbackups
+0	./.mozilla/firefox/uixu9n76.default/.parentlock
+4	./.mozilla/firefox/uixu9n76.default/downloads.sqlite
+104	./.mozilla/firefox/uixu9n76.default/xpti.dat
+4	./.mozilla/firefox/uixu9n76.default/bookmarks.html
+72	./.mozilla/firefox/uixu9n76.default/sessionstore.js
+16	./.mozilla/firefox/uixu9n76.default/secmod.db
+4	./.mozilla/firefox/uixu9n76.default/permissions.sqlite
+0	./.mozilla/firefox/uixu9n76.default/lock
+8	./.mozilla/firefox/uixu9n76.default/extensions.cache
+2020	./.mozilla/firefox/uixu9n76.default/XPC.mfasl
+148	./.mozilla/firefox/uixu9n76.default/compreg.dat
+4	./.mozilla/firefox/uixu9n76.default/pluginreg.dat
+68	./.mozilla/firefox/uixu9n76.default/cert8.db
+4	./.mozilla/firefox/uixu9n76.default/extensions
+60	./.mozilla/firefox/uixu9n76.default/extensions.rdf
+1136	./.mozilla/firefox/uixu9n76.default/XUL.mfasl
+96	./.mozilla/firefox/uixu9n76.default/places.sqlite-journal
+74324	./.mozilla/firefox/uixu9n76.default
+74332	./.mozilla/firefox
+74344	./.mozilla
+4	./.gnome/gnome-vfs/.trash_entry_cache
+8	./.gnome/gnome-vfs
+12	./.gnome
+8	./ticclient.c~
+4	./.local/share/applications/mimeinfo.cache
+12	./.local/share/applications/evince-usercustom.desktop
+20	./.local/share/applications
+24	./.local/share
+28	./.local
+8	./.bashrc
+4	./.ICEauthority
+8	./.cshrc
+8	./.tcshrc
+4	./.gtkrc-1.2-gnome2
+504	./out.nam
+4	./lab2_eg.tcl
+68	./.gconfd/saved_state
+76	./.gconfd
+8	./.Trash/hadjaha-009493a374.desktop
+12	./.Trash
+4	./.nedit/nedit.history
+8	./.nedit
+4	./.xsession-errors
+4	./.dmrc
+4	./.aspell.en.pws
+4	./lab2_1.tcl
+76	./-a
+8	./.bash_profile
+84	./install.log
+8	./temp/server.c
+4	./temp/lab2_1.tcl
+16	./temp
+16	./s.out
+4	./.redhat/esc
+8	./.redhat
+4	./.lesshst
+4	./file.tcl
+4	./.viminfo
+20	./.recently-used.xbel
+12	./final.txt
+4	./.aspell.en.prepl
+4	./.gnome2_private
+2164096	.
+/dev/pts/4
+NAME     LINE         TIME             COMMENT
+root     :0           2015-01-23 19:40
+root     pts/2        2015-01-23 21:32 (:0:S.0)
+root     pts/3        2015-01-23 21:34 (:0:S.1)
+root     pts/4        2015-01-23 21:38 (:0:S.2)
+fsck 1.39 (29-May-2006)
+/dev/sda7 is mounted.  student:
+tcejbo rotalumis a etaerC#
+]rotalumiS wen[ SN tes
+)MAN rof( swolf atad rof sroloc tnereffid enifeD#
+eulB 1 roloc SN$
+deR 2 roloc SN$
+elif ecart MAN eht nepO#
+]w maN.tuo nepo[ FN tes
+FN$ lla-sartnam SN$
+erudecorp 'hsinif' a enifeD#
+{ }{ hsinif CRP
+FN SN labolg     
+ecart-hsulf SN$     
+elif ecart MAN eht esolC#     
+FN$ esolc     
+elif ecart eht no MAN etucexE#     
+& maN.tuo maN cexe     
+0 tixe     
+}
+sedon ruof etaerC#
+                                               
+]edon SN$[ 1n tes
+]edon SN$[ 2n tes
+]edon SN$[ 3n tes
+]edon SN$[ 4n tes
+]edon SN$[ 5n tes
+]edon SN$[ 6n tes
+]edon SN$[ 7n tes
+
+sedon eht neewteb sknil etaerC#
+liaT porD sm01 BG1 2n$ 1n$ knil-xelpud SN$
+liaT porD sm01 BG1 3n$ 1n$ knil-xelpud SN$
+liaT porD sm02 bM1 6n$ 2n$ knil-xelpud SN$
+liaT porD sm02 bM1 7n$ 2n$ knil-xelpud SN$
+liaT porD sm02 bM1 5n$ 3n$ knil-xelpud SN$
+liaT porD sm02 bM1 4n$ 3n$ knil-xelpud SN$
+
+01 ot )3n-2n( knil fo eziS eueuQ teS#
+01 3n$ 1n$ timil-eueuq SN$
+01 5n$ 3n$ timil-eueuq SN$
+
+)MAN rof( noitisop edon eviG#
+nwod-tfel tneiro 2n$ 1n$ po-knil-xelpud SN$
+nwod-thgir tneiro 3n$ 1n$ po-knil-xelpud SN$
+nwod-tfel tneiro 4n$ 3n$ po-knil-xelpud SN$
+nwod-thgir tneiro 5n$ 3n$ po-knil-xelpud SN$
+nwod-tfel tneiro 6n$ 2n$ po-knil-xelpud SN$
+nwod-thgir tneiro 7n$ 2n$ po-knil-xelpud SN$
+
+)MAN rof( .)3n-2n( knil rof eueuq eht rotinoM#
+5.0 seueuq 3n$ 1n$ po-knil-xelpud SN$
+5.0 seueuq 5n$ 3n$ po-knil-xelpud SN$#
+
+
+noitcennoc CT a puteS#
+]CT/tnegA wen[ cT tes
+2 _ssalc tes cT$
+pct$ 6n$ tnega-hcatta sn$
+]kniSPCT/tnegA wen[ knis tes
+knis$ 5n$ tnega-hcatta sn$
+knis$ pct$ tcennoc sn$
+1 _dif tes pct$
+
+noitcennoc PCT revo PTF a puteS#
+]PTF/noitacilppA wen[ ptf tes
+pct$ tnega-hcatta ptf$
+PTF _epyt tes ptf$
+
+noitcennoc PDU a puteS#
+]PDU/tnegA wen[ pdu tes
+pdu$ 4n$ tnega-hcatta sn$
+]lluN/tnegA wen[ llun tes
+llun$ 5n$ tnega-hcatta sn$
+llun$ pdu$ tcennoc sn$
+2 _dif tes pdu$
+
+noitcennoc PDU revo RBC a puteS#
+
+]RBC/ciffarT/noitacilppA wen[ rbc tes
+pdu$ tnega-hcatta rbc$
+RBC _epyt tes rbc$
+0001 _ezis_tekcap tes rbc$
+bm1 _etar tes rbc$
+eslaf _modnar tes rbc$
+
+stnega PTF dna RBC eht rof stneve eludehcS#
+"trats rbc$" 1.0 ta sn$
+"trats ptf$" 0.1 ta sn$
+"pots ptf$" 0.4 ta sn$
+"pots rbc$" 5.4 ta sn$
+
+)yrassecen yllaer ton( stnega knis dna pct hcateD#
+"knis$ 5n$ tnega-hcated sn$ ; pct$ 6n$ tnega-hcated sn$" 5.4 ta sn$
+
+emit noitalumis fo sdnoces 5 retfa erudecorp hsinif eht llaC#
+"hsinif" 0.5 ta sn$
+
+lavretni dna ezis tekcap RBC tnirP#
+"]_ezis_tekcap tes rbc$[ = ezis tekcap RBC" stup
+"]_lavretni tes rbc$[ = lavretni RBC" stup
+
+noitalumis eht nuR#
+nur sn$
+
+
+
+
+enable .
+enable :
+enable [
+enable alias
+enable bg
+enable bind
+enable break
+enable builtin
+enable caller
+enable cd
+enable command
+enable compgen
+enable complete
+enable continue
+enable declare
+enable dirs
+enable disown
+enable echo
+enable enable
+enable eval
+enable exec
+enable exit
+enable export
+enable false
+enable fc
+enable fg
+enable getopts
+enable hash
+enable help
+enable history
+enable jobs
+enable kill
+enable let
+enable local
+enable logout
+enable popd
+enable printf
+enable pushd
+enable pwd
+enable read
+enable readonly
+enable return
+enable set
+enable shift
+enable shopt
+enable source
+enable suspend
+enable test
+enable times
+enable trap
+enable true
+enable type
+enable typeset
+enable ulimit
+enable umask
+enable unalias
+enable unset
+enable wait
+root     pts/1        :0.0             Fri Jan 23 20:32   still logged in   
+root     pts/1        :0.0             Fri Jan 23 19:46 - 20:32  (00:45)    
+root     pts/1        :0.0             Fri Jan 23 19:44 - 19:44  (00:00)    
+root     :0                            Fri Jan 23 19:40   still logged in   
+root     :0                            Fri Jan 23 19:40 - 19:40  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Jan 23 19:33          (02:39)    
+reboot   system boot  2.6.18-194.el5   Thu Jan 22 15:00         (1+07:12)   
+root     pts/1        :0.0             Fri Jan 16 20:59 - 22:10  (01:11)    
+root     pts/1        :0.0             Fri Jan 16 20:54 - 20:59  (00:04)    
+root     :0                            Fri Jan 16 20:53 - 22:10  (01:16)    
+root     :0                            Fri Jan 16 20:53 - 20:53  (00:00)    
+root     pts/1        :0.0             Fri Jan 16 19:41 - 20:49  (01:08)    
+root     :0                            Fri Jan 16 19:37 - 20:50  (01:12)    
+root     :0                            Fri Jan 16 19:37 - 19:37  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Jan 16 19:34          (02:36)    
+student  pts/2        :0.0             Fri Nov 28 21:56 - 21:56  (00:00)    
+student  pts/2        :0.0             Fri Nov 28 21:50 - 21:55  (00:05)    
+student  pts/1        :0.0             Fri Nov 28 21:22 - 21:58  (00:36)    
+student  :0                            Fri Nov 28 21:21 - 21:58  (00:36)    
+student  :0                            Fri Nov 28 21:21 - 21:21  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Nov 28 21:13          (00:44)    
+student  pts/1        :0.0             Fri Nov 28 19:26 - 20:23  (00:56)    
+student  :0                            Fri Nov 28 19:00 - 20:24  (01:24)    
+student  :0                            Fri Nov 28 19:00 - 19:00  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Nov 28 18:44          (01:40)    
+student  pts/1        :0.0             Tue Nov 25 21:13 - 21:17  (00:03)    
+student  pts/1        :0.0             Tue Nov 25 21:08 - 21:11  (00:02)    
+student  :0                            Tue Nov 25 21:08 - 21:17  (00:08)    
+student  :0                            Tue Nov 25 21:08 - 21:08  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Nov 25 21:07          (00:09)    
+student  pts/1        :0.0             Tue Nov 25 18:25 - 19:05  (00:39)    
+student  pts/1        :0.0             Tue Nov 25 17:51 - 18:25  (00:33)    
+student  :0                            Tue Nov 25 17:51 - 19:05  (01:14)    
+student  :0                            Tue Nov 25 17:51 - 17:51  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Nov 25 17:49          (01:15)    
+student  pts/1        :0.0             Tue Nov 25 15:59 - 17:34  (01:34)    
+student  :0                            Tue Nov 25 15:59 - 17:34  (01:35)    
+student  :0                            Tue Nov 25 15:59 - 15:59  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Nov 25 15:58          (01:35)    
+student  pts/1        :0.0             Tue Nov 11 21:08 - 22:04  (00:56)    
+student  :0                            Tue Nov 11 21:08 - 22:04  (00:56)    
+student  :0                            Tue Nov 11 21:08 - 21:08  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Nov 11 21:05          (00:59)    
+root     pts/1        :0.0             Mon Nov 10 20:04 - 20:05  (00:00)    
+root     :0                            Mon Nov 10 20:03 - 20:05  (00:01)    
+root     :0                            Mon Nov 10 20:03 - 20:03  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Nov 10 20:03          (00:02)    
+reboot   system boot  2.6.18-194.el5   Mon Nov 10 16:48          (03:17)    
+root     pts/3        :0.0             Fri Nov  7 18:42 - 20:02  (01:20)    
+root     pts/2        :0.0             Fri Nov  7 18:16 - 20:02  (01:46)    
+root     pts/1        :0.0             Fri Nov  7 18:16 - 19:19 (2+01:02)   
+root     pts/2        :0.0             Fri Nov  7 17:38 - 18:16  (00:37)    
+root     pts/1        :0.0             Fri Nov  7 17:05 - 18:16  (01:10)    
+root     :0                            Fri Nov  7 17:02 - 19:19 (2+02:17)   
+root     :0                            Fri Nov  7 17:02 - 17:02  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Nov  7 17:01         (2+02:18)   
+student  :0                            Thu Nov  6 17:30 - 18:32  (01:01)    
+student  :0                            Thu Nov  6 17:30 - 17:30  (00:00)    
+reboot   system boot  2.6.18-194.el5   Thu Nov  6 17:29          (01:02)    
+student  pts/1        :0.0             Tue Nov  4 19:49 - 22:26  (02:36)    
+student  :0                            Tue Nov  4 19:49 - 22:26  (02:37)    
+student  :0                            Tue Nov  4 19:49 - 19:49  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Nov  4 19:48          (02:37)    
+student  pts/1        :0.0             Tue Oct 14 21:27 - crash (20+22:21)  
+student  pts/1        :0.0             Tue Oct 14 21:14 - 21:27  (00:12)    
+student  pts/1        :0.0             Tue Oct 14 20:12 - 21:13  (01:01)    
+student  pts/1        :0.0             Tue Oct 14 20:11 - 20:12  (00:01)    
+student  pts/1        :0.0             Tue Oct 14 20:07 - 20:11  (00:03)    
+student  pts/1        :0.0             Tue Oct 14 20:05 - 20:07  (00:01)    
+student  :0                            Tue Oct 14 20:04 - crash (20+23:44)  
+student  :0                            Tue Oct 14 20:04 - 20:04  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Oct 14 20:03         (21+02:23)  
+reboot   system boot  2.6.18-194.el5   Tue Oct 14 20:01         (21+02:25)  
+student  :0                            Tue Oct 14 19:36 - crash  (00:25)    
+student  :0                            Tue Oct 14 19:36 - 19:36  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Oct 14 19:35         (21+02:51)  
+student  pts/1        :0.0             Mon Oct 13 20:33 - 21:58  (01:25)    
+student  pts/1        :0.0             Mon Oct 13 20:18 - 20:33  (00:14)    
+student  pts/1        :0.0             Mon Oct 13 19:39 - 20:18  (00:38)    
+student  :0                            Mon Oct 13 19:32 - 21:59  (02:27)    
+student  :0                            Mon Oct 13 19:32 - 19:32  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Oct 13 19:31          (02:27)    
+root     pts/1        :0.0             Thu Oct  9 16:33 - 16:33  (00:00)    
+root     :0                            Wed Oct  8 19:53 - crash (4+23:38)   
+root     :0                            Wed Oct  8 19:53 - 19:53  (00:00)    
+reboot   system boot  2.6.18-194.el5   Wed Oct  8 19:52         (5+02:07)   
+root     :0                            Wed Sep 24 20:11 - 22:30  (02:19)    
+root     :0                            Wed Sep 24 20:11 - 20:11  (00:00)    
+reboot   system boot  2.6.18-194.el5   Wed Sep 24 20:08          (02:22)    
+student  pts/1        :0.0             Tue Sep 23 21:55 - 22:10  (00:14)    
+student  pts/1        :0.0             Tue Sep 23 19:32 - 21:53  (02:20)    
+student  :0                            Tue Sep 23 19:30 - 22:29  (02:58)    
+student  :0                            Tue Sep 23 19:30 - 19:30  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Sep 23 19:30          (02:59)    
+student  pts/1        :0.0             Mon Sep 22 19:32 - 22:30  (02:58)    
+student  :0                            Mon Sep 22 19:30 - 22:30  (02:59)    
+student  :0                            Mon Sep 22 19:30 - 19:30  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Sep 22 19:29          (03:00)    
+student  pts/1        :0.0             Sat Sep 20 15:21 - 15:21  (00:00)    
+student  :0                            Sat Sep 20 14:40 - 15:21  (00:40)    
+student  :0                            Sat Sep 20 14:40 - 14:40  (00:00)    
+reboot   system boot  2.6.18-194.el5   Sat Sep 20 14:40          (00:41)    
+root     pts/1        :0.0             Wed Sep 17 21:11 - 21:58  (00:46)    
+root     pts/1        :0.0             Wed Sep 17 20:21 - 21:10  (00:49)    
+root     pts/1        :0.0             Wed Sep 17 19:37 - 20:21  (00:43)    
+root     :0                            Wed Sep 17 19:31 - 22:04  (02:33)    
+root     :0                            Wed Sep 17 19:31 - 19:31  (00:00)    
+reboot   system boot  2.6.18-194.el5   Wed Sep 17 19:31          (02:33)    
+student  pts/1        :0.0             Tue Sep 16 21:36 - 22:31  (00:55)    
+student  pts/1        :0.0             Tue Sep 16 21:14 - 21:35  (00:21)    
+student  pts/1        :0.0             Tue Sep 16 19:49 - 21:14  (01:25)    
+student  pts/2        :0.0             Tue Sep 16 19:35 - 19:35  (00:00)    
+student  pts/1        :0.0             Tue Sep 16 19:31 - 19:49  (00:18)    
+student  :0                            Tue Sep 16 19:28 - 22:31  (03:03)    
+student  :0                            Tue Sep 16 19:28 - 19:28  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Sep 16 19:27          (03:04)    
+student  pts/1        :0.0             Mon Sep 15 20:09 - 22:35  (02:26)    
+student  :0                            Mon Sep 15 20:08 - 22:35  (02:27)    
+student  :0                            Mon Sep 15 20:08 - 20:08  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Sep 15 20:08          (02:27)    
+student  pts/1        :0.0             Tue Sep  9 21:28 - 22:21  (00:52)    
+student  pts/1        :0.0             Tue Sep  9 19:26 - 21:28  (02:01)    
+student  :0                            Tue Sep  9 19:26 - 22:27  (03:01)    
+student  :0                            Tue Sep  9 19:26 - 19:26  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Sep  9 19:25          (03:02)    
+student  pts/1        :0.0             Mon Sep  8 22:26 - 22:42  (00:16)    
+student  pts/1        :0.0             Mon Sep  8 22:25 - 22:25  (00:00)    
+student  pts/1        :0.0             Mon Sep  8 19:35 - 22:25  (02:50)    
+student  :0                            Mon Sep  8 19:34 - 22:42  (03:07)    
+student  :0                            Mon Sep  8 19:34 - 19:34  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Sep  8 19:34          (03:08)    
+student  pts/1        :0.0             Tue Sep  2 21:50 - 21:56  (00:05)    
+student  pts/1        :0.0             Tue Sep  2 19:31 - 21:42  (02:11)    
+student  :0                            Tue Sep  2 19:31 - crash (6+00:02)   
+student  :0                            Tue Sep  2 19:31 - 19:31  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Sep  2 19:30         (6+03:12)   
+student  pts/1        :0.0             Mon Sep  1 21:03 - 22:45  (01:42)    
+student  pts/1        :0.0             Mon Sep  1 19:50 - 21:02  (01:12)    
+student  pts/3        :0.0             Mon Sep  1 19:47 - 19:50  (00:02)    
+student  pts/2        :0.0             Mon Sep  1 19:42 - 19:49  (00:07)    
+student  pts/1        :0.0             Mon Sep  1 19:30 - 19:48  (00:17)    
+student  pts/1        :0.0             Mon Sep  1 19:29 - 19:30  (00:00)    
+student  :0                            Mon Sep  1 19:28 - 22:47  (03:19)    
+student  :0                            Mon Sep  1 19:28 - 19:28  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Sep  1 19:27          (03:19)    
+student  pts/1        :0.0             Mon Sep  1 19:22 - 19:22  (00:00)    
+student  :0                            Mon Sep  1 19:21 - 19:23  (00:01)    
+student  :0                            Mon Sep  1 19:21 - 19:21  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Sep  1 19:20          (00:02)    
+root     pts/1        :0.0             Fri Aug 29 00:10 - 00:33  (00:23)    
+root     :0                            Fri Aug 29 00:10 - 00:33  (00:23)    
+root     :0                            Fri Aug 29 00:10 - 00:10  (00:00)    
+reboot   system boot  2.6.18-194.el5   Fri Aug 29 00:09          (00:24)    
+root     pts/3        :0.0             Thu Aug 28 22:12 - 22:13  (00:01)    
+root     pts/3        :0.0             Thu Aug 28 22:08 - 22:10  (00:01)    
+root     pts/3        :0.0             Thu Aug 28 22:05 - 22:05  (00:00)    
+root     pts/3        :0.0             Thu Aug 28 22:04 - 22:05  (00:01)    
+root     pts/2        :0.0             Thu Aug 28 21:45 - 22:13  (00:28)    
+root     pts/1        :0.0             Thu Aug 28 21:43 - 22:13  (00:30)    
+root     :0                            Thu Aug 28 21:42 - 22:17  (00:34)    
+root     :0                            Thu Aug 28 21:42 - 21:42  (00:00)    
+reboot   system boot  2.6.18-194.el5   Thu Aug 28 21:41          (00:35)    
+root     pts/2        :0.0             Wed Aug 27 22:04 - 22:04  (00:00)    
+root     pts/1        :0.0             Wed Aug 27 22:03 - 22:29  (00:26)    
+root     pts/1        :0.0             Wed Aug 27 21:57 - 22:03  (00:05)    
+root     pts/1        :0.0             Wed Aug 27 21:54 - 21:56  (00:02)    
+root     :0                            Wed Aug 27 21:53 - 22:29  (00:36)    
+root     :0                            Wed Aug 27 21:53 - 21:53  (00:00)    
+reboot   system boot  2.6.18-194.el5   Wed Aug 27 21:53          (00:36)    
+student  pts/1        :0.0             Tue Aug 26 19:47 - 21:57  (02:09)    
+student  pts/1        :0.0             Tue Aug 26 19:30 - 19:45  (00:14)    
+student  :0                            Tue Aug 26 19:30 - 21:57  (02:26)    
+student  :0                            Tue Aug 26 19:30 - 19:30  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Aug 26 19:29          (02:27)    
+student  pts/1        :0.0             Mon Aug 25 22:09 - 22:20  (00:10)    
+student  pts/1        :0.0             Mon Aug 25 21:39 - 22:01  (00:21)    
+student  pts/3        :0.0             Mon Aug 25 20:28 - 22:01  (01:32)    
+student  pts/2        :0.0             Mon Aug 25 20:00 - 20:28  (00:28)    
+student  pts/2        :0.0             Mon Aug 25 19:57 - 19:57  (00:00)    
+student  pts/1        :0.0             Mon Aug 25 19:29 - 20:28  (00:59)    
+student  :0                            Mon Aug 25 19:29 - 22:26  (02:57)    
+student  :0                            Mon Aug 25 19:29 - 19:29  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Aug 25 19:28          (02:57)    
+student  pts/1        :0.0             Tue Aug 19 21:33 - 21:36  (00:02)    
+student  pts/1        :0.0             Tue Aug 19 21:25 - 21:33  (00:07)    
+student  pts/1        :0.0             Tue Aug 19 21:14 - 21:25  (00:10)    
+student  pts/2        :0.0             Tue Aug 19 20:41 - 21:14  (00:33)    
+student  pts/1        :0.0             Tue Aug 19 20:35 - 21:14  (00:38)    
+student  pts/1        :0.0             Tue Aug 19 19:42 - 20:35  (00:53)    
+student  pts/1        :0.0             Tue Aug 19 19:38 - 19:42  (00:04)    
+student  pts/1        :0.0             Tue Aug 19 19:37 - 19:38  (00:00)    
+student  :0                            Tue Aug 19 19:31 - 21:37  (02:06)    
+student  :0                            Tue Aug 19 19:31 - 19:31  (00:00)    
+reboot   system boot  2.6.18-194.el5   Tue Aug 19 19:29          (02:07)    
+student  pts/1        :0.0             Mon Aug 18 20:12 - 21:58  (01:46)    
+student  :0                            Mon Aug 18 20:11 - 22:01  (01:49)    
+student  :0                            Mon Aug 18 20:11 - 20:11  (00:00)    
+reboot   system boot  2.6.18-194.el5   Mon Aug 18 20:11          (01:50)    
+reboot   system boot  2.6.18-194.el5   Wed Aug 13 19:24         (1+23:36)   
+root     :0                            Sat Aug  9 19:13 - 19:14  (00:00)    
+root     :0                            Sat Aug  9 19:13 - 19:13  (00:00)    
+reboot   system boot  2.6.18-194.el5   Sat Aug  9 19:13          (00:01)    
+reboot   system boot  2.6.18-194.el5   Sat Aug  9 19:08          (00:03)    
+
+wtmp begins Sat Aug  9 19:08:46 2014
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                               
+}
+#Call the finish procedure after 5 seconds of simulation time
+$cbr attach-agent $udp
+$cbr set packet_size_ 1000
+$cbr set random_ false
+$cbr set rate_ 1mb
+$cbr set type_ CBR
+     close $nf
+     #Close the NAM trace file
+#Create a simulator object
+#Create four nodes
+#Create links between the nodes
+#Define a 'finish' procedure
+#Define different colors for data flows (for NAM)
+#Detach tcp and sink agents (not really necessary)
+     exec nam out.nam &
+     #Execute NAM on the trace file
+     exit 0
+$ftp attach-agent $tcp
+$ftp set type_ FTP
+#Give node position (for NAM)
+     global ns nf
+#Monitor the queue for link (n2-n3). (for NAM)
+$ns at 0.1 "$cbr start"
+$ns at 1.0 "$ftp start"
+$ns at 4.0 "$ftp stop"
+$ns at 4.5 "$cbr stop"
+$ns at 4.5 "$ns detach-agent $n2 $tcp ; $ns detach-agent $n5 $sink"
+$ns at 5.0 "finish"
+$ns attach-agent $n2 $tcp
+$ns attach-agent $n4 $udp
+$ns attach-agent $n5 $null
+$ns attach-agent $n5 $sink
+$ns color 1 Blue
+$ns color 2 Red
+$ns connect $tcp $sink
+$ns connect $udp $null
+$ns duplex-link $n1 $n2 2Mb 10ms DropTail
+$ns duplex-link $n1 $n3 1.7Mb 20ms DropTail
+$ns duplex-link $n3 $n5 1.7Mb 20ms DropTail
+$ns duplex-link $n4 $n3 2Mb 10ms DropTail
+$ns duplex-link-op $n1 $n2 orient left-down
+$ns duplex-link-op $n1 $n3 orient right-down
+#$ns duplex-link-op $n1 $n3 queuePos 0.5
+$ns duplex-link-op $n3 $n4 orient left-down
+$ns duplex-link-op $n3 $n5 orient right-down
+$ns duplex-link-op $n3 $n5 queuePos 0.5
+     $ns flush-trace
+$ns namtrace-all $nf
+$ns queue-limit $n1 $n3 10
+$ns queue-limit $n3 $n5 10
+$ns run
+#Open the NAM trace file
+#Print CBR packet size and interval
+proc finish {} {
+puts "CBR interval = [$cbr set interval_]"
+puts "CBR packet size = [$cbr set packet_size_]"
+#Run the simulation
+#Schedule events for the CBR and FTP agents
+set cbr [new Application/Traffic/CBR]
+set ftp [new Application/FTP]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+set n5 [$ns node]
+set nf [open out.nam w]
+set ns [new Simulator]
+set null [new Agent/Null]
+#Set Queue Size of link (n2-n3) to 10
+set sink [new Agent/TCPSink]
+set tcp [new Agent/TCP]
+set udp [new Agent/UDP]
+#Setup a CBR over UDP connection
+#Setup a FTP over TCP connection
+#Setup a TCP connection
+#Setup a UDP connection
+$tcp set class_ 2
+$tcp set fid_ 1
+$udp set fid_ 2
+#Create a simulator object
+set ns [new Simulator]
+#Define different colors for data flows (for NAM)
+$ns color 1 Blue
+$ns color 2 Red
+#Open the NAM trace file
+set nf [open out.nam w]
+$ns namtrace-all $nf
+#Define a 'finish' procedure
+proc finish {} {
+     global ns nf
+     $ns flush-trace
+     #Close the NAM trace file
+     close $nf
+     #Execute NAM on the trace file
+     exec nam out.nam &
+     exit 0
+}
+#Create four nodes
+					       
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+set n5 [$ns node]
+
+#Create links between the nodes
+$ns duplex-link $n1 $n2 2Mb 10ms DropTail
+$ns duplex-link $n4 $n3 2Mb 10ms DropTail
+$ns duplex-link $n3 $n5 1.7Mb 20ms DropTail
+$ns duplex-link $n1 $n3 1.7Mb 20ms DropTail
+
+#Set Queue Size of link (n2-n3) to 10
+$ns queue-limit $n1 $n3 10
+$ns queue-limit $n3 $n5 10
+
+#Give node position (for NAM)
+$ns duplex-link-op $n1 $n2 orient left-down
+$ns duplex-link-op $n1 $n3 orient right-down
+$ns duplex-link-op $n3 $n4 orient left-down
+$ns duplex-link-op $n3 $n5 orient right-down
+
+#Monitor the queue for link (n2-n3). (for NAM)
+#$ns duplex-link-op $n1 $n3 queuePos 0.5
+$ns duplex-link-op $n3 $n5 queuePos 0.5
+
+#Setup a TCP connection
+set tcp [new Agent/TCP]
+$tcp set class_ 2
+$ns attach-agent $n2 $tcp
+set sink [new Agent/TCPSink]
+$ns attach-agent $n5 $sink
+$ns connect $tcp $sink
+$tcp set fid_ 1
+
+#Setup a FTP over TCP connection
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+$ftp set type_ FTP
+
+#Setup a UDP connection
+set udp [new Agent/UDP]
+$ns attach-agent $n4 $udp
+set null [new Agent/Null]
+$ns attach-agent $n5 $null
+$ns connect $udp $null
+$udp set fid_ 2
+
+#Setup a CBR over UDP connection
+
+set cbr [new Application/Traffic/CBR]
+$cbr attach-agent $udp
+$cbr set type_ CBR
+$cbr set packet_size_ 1000
+$cbr set rate_ 1mb
+$cbr set random_ false
+
+#Schedule events for the CBR and FTP agents
+$ns at 0.1 "$cbr start"
+$ns at 1.0 "$ftp start"
+$ns at 4.0 "$ftp stop"
+$ns at 4.5 "$cbr stop"
+
+#Detach tcp and sink agents (not really necessary)
+$ns at 4.5 "$ns detach-agent $n2 $tcp ; $ns detach-agent $n5 $sink"
+
+#Call the finish procedure after 5 seconds of simulation time
+$ns at 5.0 "finish"
+
+#Print CBR packet size and interval
+puts "CBR packet size = [$cbr set packet_size_]"
+puts "CBR interval = [$cbr set interval_]"
+
+#Run the simulation
+$ns run
+
+
+eth0      Link encap:Ethernet  HWaddr AC:16:2D:0B:BD:4F  
+          inet addr:10.20.4.97  Bcast:10.20.7.255  Mask:255.255.248.0
+          inet6 addr: fe80::ae16:2dff:fe0b:bd4f/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:787944 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:5368 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:148012005 (141.1 MiB)  TX bytes:761798 (743.9 KiB)
+          Interrupt:90 Base address:0x4000 
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+          RX packets:1298 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:1298 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:4652099 (4.4 MiB)  TX bytes:4652099 (4.4 MiB)
+
+  PID TTY          TIME CMD
+    1 ?        00:00:00 init
+    2 ?        00:00:00 migration/0
+    3 ?        00:00:00 ksoftirqd/0
+    4 ?        00:00:00 watchdog/0
+    5 ?        00:00:00 migration/1
+    6 ?        00:00:00 ksoftirqd/1
+    7 ?        00:00:00 watchdog/1
+    8 ?        00:00:00 migration/2
+    9 ?        00:00:00 ksoftirqd/2
+   10 ?        00:00:00 watchdog/2
+   11 ?        00:00:00 migration/3
+   12 ?        00:00:00 ksoftirqd/3
+   13 ?        00:00:00 watchdog/3
+   14 ?        00:00:00 events/0
+   15 ?        00:00:00 events/1
+   16 ?        00:00:00 events/2
+   17 ?        00:00:00 events/3
+   18 ?        00:00:00 khelper
+   59 ?        00:00:00 kthread
+   66 ?        00:00:00 kblockd/0
+   67 ?        00:00:00 kblockd/1
+   68 ?        00:00:00 kblockd/2
+   69 ?        00:00:00 kblockd/3
+   70 ?        00:00:00 kacpid
+  201 ?        00:00:00 cqueue/0
+  202 ?        00:00:00 cqueue/1
+  203 ?        00:00:00 cqueue/2
+  204 ?        00:00:00 cqueue/3
+  207 ?        00:00:00 khubd
+  209 ?        00:00:00 kseriod
+  301 ?        00:00:00 khungtaskd
+  302 ?        00:00:00 pdflush
+  303 ?        00:00:00 pdflush
+  304 ?        00:00:00 kswapd0
+  305 ?        00:00:00 aio/0
+  306 ?        00:00:00 aio/1
+  307 ?        00:00:00 aio/2
+  308 ?        00:00:00 aio/3
+  453 ?        00:00:00 kpsmoused
+  501 ?        00:00:00 ata/0
+  502 ?        00:00:00 ata/1
+  503 ?        00:00:00 ata/2
+  504 ?        00:00:00 ata/3
+  505 ?        00:00:00 ata_aux
+  511 ?        00:00:00 scsi_eh_0
+  512 ?        00:00:00 scsi_eh_1
+  513 ?        00:00:00 scsi_eh_2
+  514 ?        00:00:00 scsi_eh_3
+  515 ?        00:00:00 scsi_eh_4
+  516 ?        00:00:00 scsi_eh_5
+  532 ?        00:00:00 kstriped
+  553 ?        00:00:00 kjournald
+  579 ?        00:00:00 kauditd
+  616 ?        00:00:00 udevd
+ 1808 ?        00:00:00 kmpathd/0
+ 1809 ?        00:00:00 kmpathd/1
+ 1810 ?        00:00:00 kmpathd/2
+ 1811 ?        00:00:00 kmpathd/3
+ 1812 ?        00:00:00 kmpath_handlerd
+ 1883 ?        00:00:00 kjournald
+ 2076 ?        00:00:00 iscsi_eh
+ 2112 ?        00:00:00 iw_cxgb3
+ 2154 ?        00:00:00 ib_addr
+ 2165 ?        00:00:00 ib_mcast
+ 2166 ?        00:00:00 ib_inform
+ 2167 ?        00:00:00 local_sa
+ 2173 ?        00:00:00 iw_cm_wq
+ 2179 ?        00:00:00 ib_cm/0
+ 2180 ?        00:00:00 ib_cm/1
+ 2181 ?        00:00:00 ib_cm/2
+ 2182 ?        00:00:00 ib_cm/3
+ 2188 ?        00:00:00 rdma_cm
+ 2210 ?        00:00:00 brcm_iscsiuio
+ 2216 ?        00:00:00 iscsid
+ 2217 ?        00:00:00 iscsid
+ 2463 ?        00:00:00 dhclient
+ 2519 ?        00:00:00 auditd
+ 2521 ?        00:00:00 audispd
+ 2543 ?        00:00:00 syslogd
+ 2546 ?        00:00:00 klogd
+ 2595 ?        00:00:00 kondemand/0
+ 2596 ?        00:00:00 kondemand/1
+ 2597 ?        00:00:00 kondemand/2
+ 2599 ?        00:00:00 kondemand/3
+ 2613 ?        00:00:00 irqbalance
+ 2659 ?        00:00:00 rpciod/0
+ 2661 ?        00:00:00 rpciod/1
+ 2662 ?        00:00:00 rpciod/2
+ 2663 ?        00:00:00 rpciod/3
+ 2672 ?        00:00:00 rpc.statd
+ 2696 ?        00:00:00 rpc.idmapd
+ 2726 ?        00:00:00 hcid
+ 2732 ?        00:00:00 sdpd
+ 2761 ?        00:00:00 krfcommd
+ 2799 ?        00:00:00 pcscd
+ 2809 ?        00:00:00 acpid
+ 2819 ?        00:00:00 hald-runner
+ 2860 ?        00:00:00 hidd
+ 2887 ?        00:00:00 automount
+ 2904 ?        00:00:00 hpiod
+ 2909 ?        00:00:00 python
+ 2922 ?        00:00:00 sshd
+ 2931 ?        00:00:00 cupsd
+ 2945 ?        00:00:00 xinetd
+ 3000 ?        00:00:00 sendmail
+ 3018 ?        00:00:00 gpm
+ 3027 ?        00:00:00 crond
+ 3073 ?        00:00:00 atd
+ 3115 ?        00:00:00 cimserver
+ 3182 ?        00:00:00 smartd
+ 3187 tty1     00:00:00 mingetty
+ 3188 tty2     00:00:00 mingetty
+ 3191 tty3     00:00:00 mingetty
+ 3194 tty4     00:00:00 mingetty
+ 3197 tty5     00:00:00 mingetty
+ 3198 tty6     00:00:00 mingetty
+ 3201 ?        00:00:00 gdm-binary
+ 3295 ?        00:00:00 gdm-binary
+ 3297 ?        00:00:00 gdm-rh-security
+ 3300 tty7     00:02:06 Xorg
+ 3312 ?        00:00:00 yum-updatesd
+ 3317 ?        00:00:00 gam_server
+ 3408 ?        00:00:00 gnome-session
+ 3447 ?        00:00:00 ssh-agent
+ 3480 ?        00:00:00 dbus-launch
+ 3481 ?        00:00:00 dbus-daemon
+ 3487 ?        00:00:00 gconfd-2
+ 3490 ?        00:00:00 gnome-keyring-d
+ 3492 ?        00:00:00 gnome-settings-
+ 3512 ?        00:00:01 metacity
+ 3516 ?        00:00:00 gnome-panel
+ 3518 ?        00:00:01 nautilus
+ 3522 ?        00:00:00 bonobo-activati
+ 3524 ?        00:00:00 eggcups
+ 3529 ?        00:00:00 gnome-volume-ma
+ 3530 ?        00:00:00 gnome-vfs-daemo
+ 3539 ?        00:00:00 bt-applet
+ 3544 ?        00:00:00 nm-applet
+ 3554 ?        00:00:00 puplet
+ 3556 ?        00:00:00 pam-panel-icon
+ 3559 ?        00:00:00 pam_timestamp_c
+ 3560 ?        00:00:00 escd
+ 3562 ?        00:00:00 gnome-power-man
+ 3569 ?        00:00:00 wnck-applet
+ 3571 ?        00:00:00 trashapplet
+ 3590 ?        00:00:00 nm-system-setti
+ 3596 ?        00:00:00 mapping-daemon
+ 3607 ?        00:00:00 mixer_applet2
+ 3609 ?        00:00:00 notification-ar
+ 3611 ?        00:00:00 clock-applet
+ 3617 ?        00:00:00 gnome-screensav
+ 4081 ?        00:00:00 run-mozilla.sh
+ 4098 ?        00:00:59 firefox
+ 4657 ?        00:00:01 gnome-terminal
+ 4660 ?        00:00:00 gnome-pty-helpe
+ 4661 pts/1    00:00:00 bash
+27455 pts/1    00:00:00 man
+27477 pts/1    00:00:00 sh
+27479 pts/1    00:00:00 less
+27798 pts/1    00:00:00 screen
+27799 ?        00:00:00 screen
+27800 pts/2    00:00:00 bash
+27853 pts/3    00:00:00 bash
+27917 pts/4    00:00:00 bash
+28247 ?        00:00:00 gedit
+28292 pts/4    00:00:00 ps
+         system boot  2015-01-23 19:33
+Linux localhost.localdomain 2.6.18-194.el5 #1 SMP Tue Mar 16 21:52:39 EDT 2010 x86_64 x86_64 x86_64 GNU/Linux
+             total       used       free     shared    buffers     cached
+Mem:       3947500    1089868    2857632          0      72672     564280
+-/+ buffers/cache:     452916    3494584
+Swap:      8385888          0    8385888
+#Create a simulator object					#Create a simulator object
+set ns [new Simulator]						set ns [new Simulator]
+#Define different colors for data flows (for NAM)		#Define different colors for data flows (for NAM)
+$ns color 1 Blue						$ns color 1 Blue
+$ns color 2 Red							$ns color 2 Red
+#Open the NAM trace file					#Open the NAM trace file
+set nf [open out.nam w]						set nf [open out.nam w]
+$ns namtrace-all $nf						$ns namtrace-all $nf
+#Define a 'finish' procedure					#Define a 'finish' procedure
+proc finish {} {						proc finish {} {
+     global ns nf						     global ns nf
+     $ns flush-trace						     $ns flush-trace
+     #Close the NAM trace file					     #Close the NAM trace file
+     close $nf							     close $nf
+     #Execute NAM on the trace file				     #Execute NAM on the trace file
+     exec nam out.nam &						     exec nam out.nam &
+     exit 0							     exit 0
+}								}
+#Create four nodes						#Create four nodes
+                                               			                                               
+set n1 [$ns node]						set n1 [$ns node]
+set n2 [$ns node]						set n2 [$ns node]
+set n3 [$ns node]						set n3 [$ns node]
+set n4 [$ns node]						set n4 [$ns node]
+set n5 [$ns node]						set n5 [$ns node]
+
+#Create links between the nodes					#Create links between the nodes
+$ns duplex-link $n1 $n2 2Mb 10ms DropTail			$ns duplex-link $n1 $n2 2Mb 10ms DropTail
+$ns duplex-link $n4 $n3 2Mb 10ms DropTail			$ns duplex-link $n4 $n3 2Mb 10ms DropTail
+$ns duplex-link $n3 $n5 1.7Mb 20ms DropTail			$ns duplex-link $n3 $n5 1.7Mb 20ms DropTail
+$ns duplex-link $n1 $n3 1.7Mb 20ms DropTail			$ns duplex-link $n1 $n3 1.7Mb 20ms DropTail
+
+#Set Queue Size of link (n2-n3) to 10				#Set Queue Size of link (n2-n3) to 10
+$ns queue-limit $n1 $n3 10					$ns queue-limit $n1 $n3 10
+$ns queue-limit $n3 $n5 10					$ns queue-limit $n3 $n5 10
+
+#Give node position (for NAM)					#Give node position (for NAM)
+$ns duplex-link-op $n1 $n2 orient left-down			$ns duplex-link-op $n1 $n2 orient left-down
+$ns duplex-link-op $n1 $n3 orient right-down			$ns duplex-link-op $n1 $n3 orient right-down
+$ns duplex-link-op $n3 $n4 orient left-down			$ns duplex-link-op $n3 $n4 orient left-down
+$ns duplex-link-op $n3 $n5 orient right-down			$ns duplex-link-op $n3 $n5 orient right-down
+
+#Monitor the queue for link (n2-n3). (for NAM)			#Monitor the queue for link (n2-n3). (for NAM)
+#$ns duplex-link-op $n1 $n3 queuePos 0.5			#$ns duplex-link-op $n1 $n3 queuePos 0.5
+$ns duplex-link-op $n3 $n5 queuePos 0.5				$ns duplex-link-op $n3 $n5 queuePos 0.5
+
+#Setup a TCP connection						#Setup a TCP connection
+set tcp [new Agent/TCP]						set tcp [new Agent/TCP]
+$tcp set class_ 2						$tcp set class_ 2
+$ns attach-agent $n2 $tcp					$ns attach-agent $n2 $tcp
+set sink [new Agent/TCPSink]					set sink [new Agent/TCPSink]
+$ns attach-agent $n5 $sink					$ns attach-agent $n5 $sink
+$ns connect $tcp $sink						$ns connect $tcp $sink
+$tcp set fid_ 1							$tcp set fid_ 1
+
+#Setup a FTP over TCP connection				#Setup a FTP over TCP connection
+set ftp [new Application/FTP]					set ftp [new Application/FTP]
+$ftp attach-agent $tcp						$ftp attach-agent $tcp
+$ftp set type_ FTP						$ftp set type_ FTP
+
+#Setup a UDP connection						#Setup a UDP connection
+set udp [new Agent/UDP]						set udp [new Agent/UDP]
+$ns attach-agent $n4 $udp					$ns attach-agent $n4 $udp
+set null [new Agent/Null]					set null [new Agent/Null]
+$ns attach-agent $n5 $null					$ns attach-agent $n5 $null
+$ns connect $udp $null						$ns connect $udp $null
+$udp set fid_ 2							$udp set fid_ 2
+
+#Setup a CBR over UDP connection				#Setup a CBR over UDP connection
+
+set cbr [new Application/Traffic/CBR]				set cbr [new Application/Traffic/CBR]
+$cbr attach-agent $udp						$cbr attach-agent $udp
+$cbr set type_ CBR						$cbr set type_ CBR
+$cbr set packet_size_ 1000					$cbr set packet_size_ 1000
+$cbr set rate_ 1mb						$cbr set rate_ 1mb
+$cbr set random_ false						$cbr set random_ false
+
+#Schedule events for the CBR and FTP agents			#Schedule events for the CBR and FTP agents
+$ns at 0.1 "$cbr start"						$ns at 0.1 "$cbr start"
+$ns at 1.0 "$ftp start"						$ns at 1.0 "$ftp start"
+$ns at 4.0 "$ftp stop"						$ns at 4.0 "$ftp stop"
+$ns at 4.5 "$cbr stop"						$ns at 4.5 "$cbr stop"
+
+#Detach tcp and sink agents (not really necessary)		#Detach tcp and sink agents (not really necessary)
+$ns at 4.5 "$ns detach-agent $n2 $tcp ; $ns detach-agent $n5 	$ns at 4.5 "$ns detach-agent $n2 $tcp ; $ns detach-agent $n5 
+
+#Call the finish procedure after 5 seconds of simulation time	#Call the finish procedure after 5 seconds of simulation time
+$ns at 5.0 "finish"						$ns at 5.0 "finish"
+
+#Print CBR packet size and interval				#Print CBR packet size and interval
+puts "CBR packet size = [$cbr set packet_size_]"		puts "CBR packet size = [$cbr set packet_size_]"
+puts "CBR interval = [$cbr set interval_]"			puts "CBR interval = [$cbr set interval_]"
+
+#Run the simulation						#Run the simulation
+$ns run								$ns run
+
+
+#Create a simulator object
+set ns [new Simulator]
+#Define different colors for data flows (for NAM)
+$ns color 1 Blue
+$ns color 2 Red
+#Open the NAM trace file
+set nf [open out.nam w]
+$ns namtrace-all $nf
+#Define a 'finish' procedure
+proc finish {} {
+$ns at 5.0 "finish"
+
+#Print CBR packet size and interval
+puts "CBR packet size = [$cbr set packet_size_]"
+puts "CBR interval = [$cbr set interval_]"
+
+#Run the simulation
+$ns run
+
+
+Linux version 2.6.18-194.el5 (mockbuild@x86-005.build.bos.redhat.com) (gcc version 4.1.2 20080704 (Red Hat 4.1.2-48)) #1 SMP Tue Mar 16 21:52:39 EDT 2010
+Command line: ro root=LABEL=/ rhgb quiet
+BIOS-provided physical RAM map:
+ BIOS-e820: 0000000000010000 - 000000000009d800 (usable)
+ BIOS-e820: 000000000009d800 - 00000000000a0000 (reserved)
+ BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
+ BIOS-e820: 0000000000100000 - 0000000020000000 (usable)
+ BIOS-e820: 0000000020000000 - 0000000020200000 (reserved)
+ BIOS-e820: 0000000020200000 - 0000000040000000 (usable)
+ BIOS-e820: 0000000040000000 - 0000000040200000 (reserved)
+ BIOS-e820: 0000000040200000 - 00000000baaa7000 (usable)
+ BIOS-e820: 00000000baaa7000 - 00000000baaf0000 (ACPI NVS)
+ BIOS-e820: 00000000baaf0000 - 00000000baaf8000 (ACPI data)
+ BIOS-e820: 00000000baaf8000 - 00000000bab0e000 (reserved)
+ BIOS-e820: 00000000bab0e000 - 00000000bab10000 (usable)
+ BIOS-e820: 00000000bab10000 - 00000000bab1e000 (ACPI NVS)
+ BIOS-e820: 00000000bab1e000 - 00000000bab6f000 (reserved)
+ BIOS-e820: 00000000bab6f000 - 00000000babb2000 (ACPI NVS)
+ BIOS-e820: 00000000babb2000 - 00000000bae2e000 (usable)
+ BIOS-e820: 00000000bae2e000 - 00000000bae34000 (reserved)
+ BIOS-e820: 00000000bae34000 - 00000000bae44000 (usable)
+ BIOS-e820: 00000000bae44000 - 00000000baff4000 (reserved)
+ BIOS-e820: 00000000baff4000 - 00000000bb000000 (usable)
+ BIOS-e820: 00000000bbe00000 - 00000000c0000000 (reserved)
+ BIOS-e820: 00000000fed1c000 - 00000000fed20000 (reserved)
+ BIOS-e820: 00000000ff000000 - 0000000100000000 (reserved)
+ BIOS-e820: 0000000100000000 - 000000013f800000 (usable)
+DMI 2.6 present.
+ACPI: RSDP (v002 HPQOEM                                ) @ 0x00000000000f0420
+ACPI: XSDT (v001 HPQOEM SLIC-CPC 0x01072009 AMI  0x00010013) @ 0x00000000baaf0070
+ACPI: FADT (v004 HPQOEM SLIC-CPC 0x01072009 AMI  0x00010013) @ 0x00000000baaf7338
+ACPI: MADT (v003 HPQOEM SLIC-CPC 0x01072009 AMI  0x00010013) @ 0x00000000baaf7430
+ACPI: SSDT (v001 HPQOEM SLIC-CPC 0x00000001 MSFT 0x03000001) @ 0x00000000baaf74a8
+ACPI: MCFG (v001 HPQOEM SLIC-CPC 0x01072009 MSFT 0x00000097) @ 0x00000000baaf75b0
+ACPI: HPET (v001 HPQOEM SLIC-CPC 0x01072009 AMI. 0x00000004) @ 0x00000000baaf75f0
+ACPI: DBGP (v001 HPQOEM SLIC-CPC 0x01072009 AMI  0x00010013) @ 0x00000000baaf7628
+ACPI: SSDT (v001 HPQOEM SLIC-CPC 0x00000001 MSFT 0x03000001) @ 0x00000000baaf7660
+ACPI: DSDT (v002 HPQOEM SLIC-CPC 0x00000006 INTL 0x20051117) @ 0x0000000000000000
+No NUMA configuration found
+Faking a node at 0000000000000000-000000013f800000
+Bootmem setup node 0 0000000000000000-000000013f800000
+Memory for crash kernel (0x0 to 0x0) notwithin permissible range
+disabling kdump
+On node 0 totalpages: 1005010
+  DMA zone: 2621 pages, LIFO batch:0
+  DMA32 zone: 745849 pages, LIFO batch:31
+  Normal zone: 256540 pages, LIFO batch:31
+ACPI: PM-Timer IO Port: 0x408
+ACPI: Local APIC address 0xfee00000
+ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+Processor #0 6:10 APIC version 21
+ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
+Processor #2 6:10 APIC version 21
+ACPI: LAPIC (acpi_id[0x03] lapic_id[0x04] enabled)
+Processor #4 6:10 APIC version 21
+ACPI: LAPIC (acpi_id[0x04] lapic_id[0x06] enabled)
+Processor #6 6:10 APIC version 21
+ACPI: LAPIC_NMI (acpi_id[0xff] high edge lint[0x1])
+ACPI: IOAPIC (id[0x00] address[0xfec00000] gsi_base[0])
+IOAPIC[0]: apic_id 0, version 32, address 0xfec00000, GSI 0-23
+ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+ACPI: IRQ0 used by override.
+ACPI: IRQ2 used by override.
+ACPI: IRQ9 used by override.
+Setting APIC routing to physical flat
+ACPI: HPET id: 0x8086a701 base: 0xfed00000
+Using ACPI (MADT) for SMP configuration information
+Nosave address range: 000000000009d000 - 000000000009e000
+Nosave address range: 000000000009e000 - 00000000000a0000
+Nosave address range: 00000000000a0000 - 00000000000e0000
+Nosave address range: 00000000000e0000 - 0000000000100000
+Nosave address range: 0000000020000000 - 0000000020200000
+Nosave address range: 0000000040000000 - 0000000040200000
+Nosave address range: 00000000baaa7000 - 00000000baaf0000
+Nosave address range: 00000000baaf0000 - 00000000baaf8000
+Nosave address range: 00000000baaf8000 - 00000000bab0e000
+Nosave address range: 00000000bab10000 - 00000000bab1e000
+Nosave address range: 00000000bab1e000 - 00000000bab6f000
+Nosave address range: 00000000bab6f000 - 00000000babb2000
+Nosave address range: 00000000bae2e000 - 00000000bae34000
+Nosave address range: 00000000bae44000 - 00000000baff4000
+Nosave address range: 00000000bb000000 - 00000000bbe00000
+Nosave address range: 00000000bbe00000 - 00000000c0000000
+Nosave address range: 00000000c0000000 - 00000000fed1c000
+Nosave address range: 00000000fed1c000 - 00000000fed20000
+Nosave address range: 00000000fed20000 - 00000000ff000000
+Nosave address range: 00000000ff000000 - 0000000100000000
+Allocating PCI resources starting at c4000000 (gap: c0000000:3ed1c000)
+SMP: Allowing 4 CPUs, 0 hotplug CPUs
+Built 1 zonelists.  Total pages: 1005010
+Kernel command line: ro root=LABEL=/ rhgb quiet
+Initializing CPU#0
+PID hash table entries: 4096 (order: 12, 32768 bytes)
+Console: colour VGA+ 80x25
+Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+Checking aperture...
+ACPI: DMAR not present
+PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+Placing software IO TLB between 0x163c000 - 0x563c000
+Memory: 3944644k/5234688k available (2577k kernel code, 152180k reserved, 1305k data, 212k init)
+Calibrating delay loop (skipped), value calculated using timer frequency.. 6186.22 BogoMIPS (lpj=3093113)
+Security Framework v1.0.0 initialized
+SELinux:  Initializing.
+SELinux:  Starting in permissive mode
+selinux_register_security:  Registering secondary module capability
+Capability LSM initialized as secondary
+Mount-cache hash table entries: 256
+CPU: L1 I cache: 32K, L1 D cache: 32K
+CPU: L2 cache: 256K
+CPU: L3 cache: 6144K
+using mwait in idle threads.
+CPU: Physical Processor ID: 0
+CPU: Processor Core ID: 0
+CPU0: Thermal monitoring enabled (TM1)
+SMP alternatives: switching to UP code
+ACPI: Core revision 20060707
+Using local APIC timer interrupts.
+Detected 6.236 MHz APIC timer.
+SMP alternatives: switching to SMP code
+Booting processor 1/4 APIC 0x2
+Initializing CPU#1
+Calibrating delay using timer specific routine.. 6185.89 BogoMIPS (lpj=3092945)
+CPU: L1 I cache: 32K, L1 D cache: 32K
+CPU: L2 cache: 256K
+CPU: L3 cache: 6144K
+CPU: Physical Processor ID: 0
+CPU: Processor Core ID: 1
+CPU1: Thermal monitoring enabled (TM1)
+        Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz stepping 07
+SMP alternatives: switching to SMP code
+Booting processor 2/4 APIC 0x4
+Initializing CPU#2
+Calibrating delay using timer specific routine.. 6185.77 BogoMIPS (lpj=3092887)
+CPU: L1 I cache: 32K, L1 D cache: 32K
+CPU: L2 cache: 256K
+CPU: L3 cache: 6144K
+CPU: Physical Processor ID: 0
+CPU: Processor Core ID: 2
+CPU2: Thermal monitoring enabled (TM1)
+        Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz stepping 07
+SMP alternatives: switching to SMP code
+Booting processor 3/4 APIC 0x6
+Initializing CPU#3
+Calibrating delay using timer specific routine.. 6185.91 BogoMIPS (lpj=3092956)
+CPU: L1 I cache: 32K, L1 D cache: 32K
+CPU: L2 cache: 256K
+CPU: L3 cache: 6144K
+CPU: Physical Processor ID: 0
+CPU: Processor Core ID: 3
+CPU3: Thermal monitoring enabled (TM1)
+        Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz stepping 07
+Brought up 4 CPUs
+testing NMI watchdog ... OK.
+time.c: Using 14.318180 MHz WALL HPET GTOD HPET/TSC timer.
+time.c: Detected 3093.113 MHz processor.
+sizeof(vma)=176 bytes
+sizeof(page)=56 bytes
+sizeof(inode)=560 bytes
+sizeof(dentry)=216 bytes
+sizeof(ext3inode)=760 bytes
+sizeof(buffer_head)=96 bytes
+sizeof(skbuff)=248 bytes
+migration_cost=23
+checking if image is initramfs... it is
+Freeing initrd memory: 2642k freed
+NET: Registered protocol family 16
+ACPI: bus type pci registered
+PCI: BIOS Bug: MCFG area at e0000000 is not E820-reserved
+PCI: Not using MMCONFIG.
+PCI: Using configuration type 1
+ACPI: Interpreter enabled
+ACPI: Using IOAPIC for interrupt routing
+ACPI: No dock devices found.
+ACPI: PCI Root Bridge [PCI0] (0000:00)
+PCI: Transparent bridge - 0000:05:00.0
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX0._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX1._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX2._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX3._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX4._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX5._PRT]
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.P0P1._PRT]
+ACPI: PCI Interrupt Link [LNKA] (IRQs 3 4 5 6 7 10 *11 12 14 15)
+ACPI: PCI Interrupt Link [LNKB] (IRQs 3 4 *5 6 7 10 11 12 14 15)
+ACPI: PCI Interrupt Link [LNKC] (IRQs *3 4 5 6 10 11 12 14 15)
+ACPI: PCI Interrupt Link [LNKD] (IRQs 3 4 5 6 10 *11 12 14 15)
+ACPI: PCI Interrupt Link [LNKE] (IRQs 3 4 5 6 7 10 11 12 14 15) *0
+ACPI: PCI Interrupt Link [LNKF] (IRQs 3 4 5 6 7 10 11 12 14 15) *0
+ACPI: PCI Interrupt Link [LNKG] (IRQs 3 4 5 6 7 *10 11 12 14 15)
+ACPI: PCI Interrupt Link [LNKH] (IRQs 3 4 5 6 7 *10 11 12 14 15)
+Linux Plug and Play Support v0.97 (c) Adam Belay
+pnp: PnP ACPI init
+pnp: PnP ACPI: found 14 devices
+usbcore: registered new driver usbfs
+usbcore: registered new driver hub
+PCI: Using ACPI for IRQ routing
+PCI: If a device doesn't work, try "pci=routeirq".  If it helps, post a report
+NetLabel: Initializing
+NetLabel:  domain hash size = 128
+NetLabel:  protocols = UNLABELED CIPSOv4
+NetLabel:  unlabeled traffic allowed by default
+hpet0: at MMIO 0xfed00000 (virtual 0xffffffffff5fe000), IRQs 2, 8, 0, 0, 0, 0, 0, 0
+hpet0: 8 64-bit timers, 14318180 Hz
+ACPI: DMAR not present
+PCI-GART: No AMD northbridge found.
+pnp: 00:02: ioport range 0xa00-0xa1f has been reserved
+pnp: 00:02: ioport range 0xa30-0xa3f has been reserved
+pnp: 00:02: ioport range 0xa20-0xa2f has been reserved
+pnp: 00:0b: ioport range 0x400-0x453 could not be reserved
+pnp: 00:0b: ioport range 0x458-0x47f has been reserved
+pnp: 00:0b: ioport range 0x1180-0x119f has been reserved
+pnp: 00:0b: ioport range 0x500-0x57f has been reserved
+pnp: 00:0c: ioport range 0x454-0x457 has been reserved
+PCI: Bridge: 0000:00:01.0
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.0
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.1
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.2
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:05:00.0
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.3
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.4
+  IO window: disabled.
+  MEM window: disabled.
+  PREFETCH window: disabled.
+PCI: Bridge: 0000:00:1c.5
+  IO window: e000-efff
+  MEM window: fe400000-fe4fffff
+  PREFETCH window 0x00000000d0000000-0x00000000d00fffff
+GSI 16 sharing vector 0xA9 and IRQ 16
+ACPI: PCI Interrupt 0000:00:01.0[A] -> GSI 16 (level, low) -> IRQ 169
+PCI: Setting latency timer of device 0000:00:01.0 to 64
+GSI 17 sharing vector 0xB1 and IRQ 17
+ACPI: PCI Interrupt 0000:00:1c.0[A] -> GSI 17 (level, low) -> IRQ 177
+PCI: Setting latency timer of device 0000:00:1c.0 to 64
+ACPI: PCI Interrupt 0000:00:1c.1[B] -> GSI 16 (level, low) -> IRQ 169
+PCI: Setting latency timer of device 0000:00:1c.1 to 64
+GSI 18 sharing vector 0xB9 and IRQ 18
+ACPI: PCI Interrupt 0000:00:1c.2[C] -> GSI 18 (level, low) -> IRQ 185
+PCI: Setting latency timer of device 0000:00:1c.2 to 64
+GSI 19 sharing vector 0xC1 and IRQ 19
+ACPI: PCI Interrupt 0000:00:1c.3[D] -> GSI 19 (level, low) -> IRQ 193
+PCI: Setting latency timer of device 0000:00:1c.3 to 64
+ACPI: PCI Interrupt 0000:05:00.0[A] -> GSI 19 (level, low) -> IRQ 193
+PCI: Setting latency timer of device 0000:05:00.0 to 64
+ACPI: PCI Interrupt 0000:00:1c.4[A] -> GSI 17 (level, low) -> IRQ 177
+PCI: Setting latency timer of device 0000:00:1c.4 to 64
+ACPI: PCI Interrupt 0000:00:1c.5[B] -> GSI 16 (level, low) -> IRQ 169
+PCI: Setting latency timer of device 0000:00:1c.5 to 64
+NET: Registered protocol family 2
+IP route cache hash table entries: 131072 (order: 8, 1048576 bytes)
+TCP established hash table entries: 262144 (order: 10, 4194304 bytes)
+TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
+TCP: Hash tables configured (established 262144 bind 65536)
+TCP reno registered
+audit: initializing netlink socket (disabled)
+type=2000 audit(1422021790.576:1): initialized
+Total HugeTLB memory allocated, 0
+VFS: Disk quotas dquot_6.5.1
+Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+SELinux:  Registering netfilter hooks
+Initializing Cryptographic API
+alg: No test for crc32c (crc32c-generic)
+ksign: Installing public key data
+Loading keyring
+- Added public key 78CCFEAA9428026A
+- User ID: Red Hat, Inc. (Kernel Module GPG key)
+io scheduler noop registered
+io scheduler anticipatory registered
+io scheduler deadline registered
+io scheduler cfq registered (default)
+Boot video device is 0000:00:02.0
+PCI: Setting latency timer of device 0000:00:01.0 to 64
+PCI: Setting latency timer of device 0000:00:1c.0 to 64
+PCI: Setting latency timer of device 0000:00:1c.1 to 64
+PCI: Setting latency timer of device 0000:00:1c.2 to 64
+PCI: Setting latency timer of device 0000:00:1c.3 to 64
+PCI: Setting latency timer of device 0000:00:1c.4 to 64
+PCI: Setting latency timer of device 0000:00:1c.5 to 64
+pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+ACPI (exconfig-0456): Dynamic SSDT Load - OemId [   AMI] OemTableId [     IST] [20060707]
+ACPI (exconfig-0456): Dynamic SSDT Load - OemId [   AMI] OemTableId [     CST] [20060707]
+ACPI: CPU0 (power states: C1[C1] C2[C3] C3[C3])
+ACPI: Processor [CPU0] (supports 8 throttling states)
+ACPI: CPU1 (power states: C1[C1] C2[C3] C3[C3])
+ACPI: Processor [CPU1] (supports 1 throttling states)
+ACPI: CPU2 (power states: C1[C1] C2[C3] C3[C3])
+ACPI: Processor [CPU2] (supports 1 throttling states)
+ACPI: CPU3 (power states: C1[C1] C2[C3] C3[C3])
+ACPI: Processor [CPU3] (supports 1 throttling states)
+Real Time Clock Driver v1.12ac
+hpet_resources: 0xfed00000 is busy
+Non-volatile memory driver v1.2
+Linux agpgart interface v0.101 (c) Dave Jones
+Serial: 8250/16550 driver $Revision: 1.90 $ 4 ports, IRQ sharing enabled
+serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+00:05: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+brd: module loaded
+Uniform Multi-Platform E-IDE driver Revision: 7.00alpha2
+ide: Assuming 33MHz system bus speed for PIO modes; override with idebus=xx
+Probing IDE interface ide0...
+Probing IDE interface ide1...
+ide-floppy driver 0.99.newide
+usbcore: registered new driver hiddev
+usbcore: registered new driver usbhid
+drivers/usb/input/hid-core.c: v2.6:USB HID core driver
+PNP: PS/2 Controller [PNP0303:PS2K,PNP0f03:PS2M] at 0x60,0x64 irq 1,12
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+mice: PS/2 mouse device common for all mice
+md: md driver 0.90.3 MAX_MD_DEVS=256, MD_SB_DISKS=27
+md: bitmap version 4.39
+TCP bic registered
+Initializing IPsec netlink socket
+NET: Registered protocol family 1
+NET: Registered protocol family 17
+ACPI: (supports S0 S1 S3 S4 S5)
+Initalizing network drop monitor service
+Freeing unused kernel memory: 212k freed
+Write protecting the kernel read-only data: 504k
+ACPI: PCI Interrupt 0000:00:1a.0[A] -> GSI 16 (level, low) -> IRQ 169
+PCI: Setting latency timer of device 0000:00:1a.0 to 64
+ehci_hcd 0000:00:1a.0: EHCI Host Controller
+ehci_hcd 0000:00:1a.0: new USB bus registered, assigned bus number 1
+ehci_hcd 0000:00:1a.0: debug port 2
+PCI: cache line size of 32 is not supported by device 0000:00:1a.0
+ehci_hcd 0000:00:1a.0: irq 169, io mem 0xfe507000
+ehci_hcd 0000:00:1a.0: USB 2.0 started, EHCI 1.00, driver 10 Dec 2004
+usb usb1: configuration #1 chosen from 1 choice
+hub 1-0:1.0: USB hub found
+hub 1-0:1.0: 2 ports detected
+GSI 20 sharing vector 0x4A and IRQ 20
+ACPI: PCI Interrupt 0000:00:1d.0[A] -> GSI 23 (level, low) -> IRQ 74
+PCI: Setting latency timer of device 0000:00:1d.0 to 64
+ehci_hcd 0000:00:1d.0: EHCI Host Controller
+ehci_hcd 0000:00:1d.0: new USB bus registered, assigned bus number 2
+ehci_hcd 0000:00:1d.0: debug port 2
+PCI: cache line size of 32 is not supported by device 0000:00:1d.0
+ehci_hcd 0000:00:1d.0: irq 74, io mem 0xfe506000
+ehci_hcd 0000:00:1d.0: USB 2.0 started, EHCI 1.00, driver 10 Dec 2004
+usb usb2: configuration #1 chosen from 1 choice
+hub 2-0:1.0: USB hub found
+hub 2-0:1.0: 2 ports detected
+ohci_hcd: 2005 April 22 USB 1.1 'Open' Host Controller (OHCI) Driver (PCI)
+USB Universal Host Controller Interface driver v3.0
+SCSI subsystem initialized
+libata version 3.00 loaded.
+ahci 0000:00:1f.2: version 3.0
+ACPI: PCI Interrupt 0000:00:1f.2[B] -> GSI 19 (level, low) -> IRQ 193
+usb 1-1: new high speed USB device using ehci_hcd and address 2
+usb 1-1: configuration #1 chosen from 1 choice
+hub 1-1:1.0: USB hub found
+hub 1-1:1.0: 4 ports detected
+usb 2-1: new high speed USB device using ehci_hcd and address 2
+usb 2-1: configuration #1 chosen from 1 choice
+hub 2-1:1.0: USB hub found
+hub 2-1:1.0: 6 ports detected
+usb 2-1.2: new low speed USB device using ehci_hcd and address 3
+usb 2-1.2: configuration #1 chosen from 1 choice
+input: Logitech USB Optical Mouse as /class/input/input0
+input: USB HID v1.11 Mouse [Logitech USB Optical Mouse] on usb-0000:00:1d.0-1.2
+ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 4 ports 3 Gbps 0x33 impl SATA mode
+ahci 0000:00:1f.2: flags: 64bit ncq sntf pm led clo pio slum part ems 
+PCI: Setting latency timer of device 0000:00:1f.2 to 64
+scsi0 : ahci
+scsi1 : ahci
+scsi2 : ahci
+scsi3 : ahci
+scsi4 : ahci
+scsi5 : ahci
+ata1: SATA max UDMA/133 abar m2048@0xfe505000 port 0xfe505100 irq 82
+ata2: SATA max UDMA/133 abar m2048@0xfe505000 port 0xfe505180 irq 82
+ata3: DUMMY
+ata4: DUMMY
+ata5: SATA max UDMA/133 abar m2048@0xfe505000 port 0xfe505300 irq 82
+ata6: SATA max UDMA/133 abar m2048@0xfe505000 port 0xfe505380 irq 82
+usb 2-1.3: new low speed USB device using ehci_hcd and address 4
+usb 2-1.3: configuration #1 chosen from 1 choice
+input: CHICONY HP Basic USB Keyboard as /class/input/input1
+input: USB HID v1.11 Keyboard [CHICONY HP Basic USB Keyboard] on usb-0000:00:1d.0-1.3
+ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ata1.00: ATA-8: Hitachi HDS721050CLA660, JP2OA41A, max UDMA/133
+ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 31/32)
+ata1.00: configured for UDMA/133
+ata2: SATA link down (SStatus 0 SControl 300)
+ata5: SATA link down (SStatus 0 SControl 300)
+ata6: SATA link down (SStatus 0 SControl 300)
+  Vendor: ATA       Model: Hitachi HDS72105  Rev: JP2O
+  Type:   Direct-Access                      ANSI SCSI revision: 05
+SCSI device sda: 976773168 512-byte hdwr sectors (500108 MB)
+sda: Write Protect is off
+sda: Mode Sense: 00 3a 00 00
+SCSI device sda: drive cache: write back
+SCSI device sda: 976773168 512-byte hdwr sectors (500108 MB)
+sda: Write Protect is off
+sda: Mode Sense: 00 3a 00 00
+SCSI device sda: drive cache: write back
+ sda: sda1 sda2 sda3 sda4 < sda5 sda6 sda7 >
+sd 0:0:0:0: Attached scsi disk sda
+Initializing USB Mass Storage driver...
+usbcore: registered new driver usb-storage
+USB Mass Storage support registered.
+device-mapper: uevent: version 1.0.3
+device-mapper: ioctl: 4.11.5-ioctl (2007-12-12) initialised: dm-devel@redhat.com
+device-mapper: dm-raid45: initialized v0.2594l
+EXT3-fs: INFO: recovery required on readonly filesystem.
+EXT3-fs: write access will be enabled during recovery.
+kjournald starting.  Commit interval 5 seconds
+EXT3-fs: recovery complete.
+EXT3-fs: mounted filesystem with ordered data mode.
+SELinux:  Disabled at runtime.
+SELinux:  Unregistering netfilter hooks
+type=1404 audit(1422021823.037:2): selinux=0 auid=4294967295 ses=4294967295
+shpchp: Standard Hot Plug PCI Controller Driver version: 0.4
+input: PC Speaker as /class/input/input2
+r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+ACPI: PCI Interrupt 0000:08:00.0[A] -> GSI 17 (level, low) -> IRQ 177
+PCI: Setting latency timer of device 0000:08:00.0 to 64
+r8169 0000:08:00.0: unknown MAC, using family default
+eth0: RTL8168b/8111b at 0xffffc20000034000, ac:16:2d:0b:bd:4f, XID 0c200000 IRQ 90
+sd 0:0:0:0: Attached scsi generic sg0 type 0
+usb 2-1.3: USB disconnect, address 4
+floppy0: no floppy controllers found
+lp: driver loaded but no devices found
+NET: Registered protocol family 10
+lo: Disabled Privacy Extensions
+IPv6 over IPv4 tunneling driver
+mtrr: type mismatch for c3fe0000,10000 old: write-back new: write-combining
+mtrr: type mismatch for c3fc0000,20000 old: write-back new: write-combining
+mtrr: type mismatch for c3f80000,40000 old: write-back new: write-combining
+mtrr: type mismatch for c3f00000,80000 old: write-back new: write-combining
+mtrr: type mismatch for c3e00000,100000 old: write-back new: write-combining
+mtrr: type mismatch for c3c00000,200000 old: write-back new: write-combining
+mtrr: type mismatch for c3800000,400000 old: write-back new: write-combining
+mtrr: type mismatch for c3000000,800000 old: write-back new: write-combining
+mtrr: type mismatch for c2000000,1000000 old: write-back new: write-combining
+mtrr: type mismatch for c0000000,2000000 old: write-back new: write-combining
+usb 2-1.3: new high speed USB device using ehci_hcd and address 5
+usb 2-1.3: configuration #1 chosen from 1 choice
+scsi6 : SCSI emulation for USB Mass Storage devices
+usb-storage: device found at 5
+usb-storage: waiting for device to settle before scanning
+ACPI: Power Button (FF) [PWRF]
+ACPI: Power Button (CM) [PWRB]
+ACPI: Mapper loaded
+dell-wmi: No known WMI GUID found
+md: Autodetecting RAID arrays.
+md: autorun ...
+md: ... autorun DONE.
+device-mapper: multipath: version 1.0.5 loaded
+loop: loaded (max 8 devices)
+EXT3 FS on sda7, internal journal
+kjournald starting.  Commit interval 5 seconds
+EXT3 FS on sda5, internal journal
+EXT3-fs: mounted filesystem with ordered data mode.
+Adding 8385888k swap on /dev/sda6.  Priority:-1 extents:1 across:8385888k
+IA-32 Microcode Update Driver: v1.14a <tigran@veritas.com>
+usb 2-1.3: USB disconnect, address 5
+Loading iSCSI transport class v2.0-871.
+802.1Q VLAN Support v1.8 Ben Greear <greearb@candelatech.com>
+All bugs added by David S. Miller <davem@redhat.com>
+cxgb3i: tag itt 0x1fff, 13 bits, age 0xf, 4 bits.
+iscsi: registered transport (cxgb3i)
+Broadcom NetXtreme II CNIC Driver cnic v2.1.0 (Oct 10, 2009)
+Broadcom NetXtreme II iSCSI Driver bnx2i v2.1.0 (Dec 06, 2009)
+iscsi: registered transport (bnx2i)
+iscsi: registered transport (tcp)
+iscsi: registered transport (iser)
+iscsi: registered transport (be2iscsi)
+r8169: eth0: link up
+r8169: eth0: link up
+Bluetooth: Core ver 2.10
+NET: Registered protocol family 31
+Bluetooth: HCI device and connection manager initialized
+Bluetooth: HCI socket layer initialized
+Bluetooth: L2CAP ver 2.8
+Bluetooth: L2CAP socket layer initialized
+Bluetooth: RFCOMM socket layer initialized
+Bluetooth: RFCOMM TTY layer initialized
+Bluetooth: RFCOMM ver 1.8
+Bluetooth: HIDP (Human Interface Emulation) ver 1.1
+eth0: no IPv6 routers present
+mtrr: type mismatch for c3fe0000,10000 old: write-back new: write-combining
+mtrr: type mismatch for c3fc0000,20000 old: write-back new: write-combining
+mtrr: type mismatch for c3f80000,40000 old: write-back new: write-combining
+mtrr: type mismatch for c3f00000,80000 old: write-back new: write-combining
+mtrr: type mismatch for c3e00000,100000 old: write-back new: write-combining
+mtrr: type mismatch for c3c00000,200000 old: write-back new: write-combining
+mtrr: type mismatch for c3800000,400000 old: write-back new: write-combining
+mtrr: type mismatch for c3000000,800000 old: write-back new: write-combining
+mtrr: type mismatch for c2000000,1000000 old: write-back new: write-combining
+mtrr: type mismatch for c0000000,2000000 old: write-back new: write-combining
+usb 2-1.3: new low speed USB device using ehci_hcd and address 6
+usb 2-1.3: configuration #1 chosen from 1 choice
+input: CHICONY HP Basic USB Keyboard as /class/input/input3
+input: USB HID v1.11 Keyboard [CHICONY HP Basic USB Keyboard] on usb-0000:00:1d.0-1.3
+usb 2-1.2: USB disconnect, address 3
+usb 2-1.2: new low speed USB device using ehci_hcd and address 7
+usb 2-1.2: configuration #1 chosen from 1 choice
+input: USB Optical Mouse as /class/input/input4
+input: USB HID v1.11 Mouse [USB Optical Mouse] on usb-0000:00:1d.0-1.2
+usb 2-1.3: USB disconnect, address 6
+usb 2-1.3: new low speed USB device using ehci_hcd and address 8
+usb 2-1.3: configuration #1 chosen from 1 choice
+input: CHICONY HP Basic USB Keyboard as /class/input/input5
+input: USB HID v1.11 Keyboard [CHICONY HP Basic USB Keyboard] on usb-0000:00:1d.0-1.3
+usb 2-1.2: USB disconnect, address 7
+usb 2-1.2: new low speed USB device using ehci_hcd and address 9
+usb 2-1.2: configuration #1 chosen from 1 choice
+input: Logitech USB Optical Mouse as /class/input/input6
+input: USB HID v1.11 Mouse [Logitech USB Optical Mouse] on usb-0000:00:1d.0-1.2
+usb 2-1.2: USB disconnect, address 9
+usb 2-1.2: new low speed USB device using ehci_hcd and address 10
+usb 2-1.2: configuration #1 chosen from 1 choice
+input: Logitech USB Optical Mouse as /class/input/input7
+input: USB HID v1.11 Mouse [Logitech USB Optical Mouse] on usb-0000:00:1d.0-1.2
+usb 2-1.2: USB disconnect, address 10
+usb 2-1.2: new low speed USB device using ehci_hcd and address 11
+usb 2-1.2: configuration #1 chosen from 1 choice
+input: Logitech USB Optical Mouse as /class/input/input8
+input: USB HID v1.11 Mouse [Logitech USB Optical Mouse] on usb-0000:00:1d.0-1.2
+             total       used       free     shared    buffers     cached
+Mem:          3854       1064       2790          0         71        551
+-/+ buffers/cache:        442       3412
+Swap:         8189          0       8189
